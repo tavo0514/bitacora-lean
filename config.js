@@ -6,8 +6,8 @@
 //  de la base de datos. NUNCA pegues aquí una "secret key".
 // =====================================================================
 window.BITACORA_CONFIG = {
-  supabaseUrl: "PEGA_AQUI_LA_URL_DEL_PROYECTO",
-  supabaseKey: "PEGA_AQUI_LA_PUBLISHABLE_KEY",
+  supabaseUrl: "https://rpqbygfcubgnqtntiwtw.supabase.co",
+  supabaseKey: "sb_publishable_XW_hcHa7nzzsQNk4TEqdHA_5HfPuGZ-",
 
   // Nombre que se muestra arriba a la izquierda (puedes cambiarlo)
   appName: "Bitácora Lean",
