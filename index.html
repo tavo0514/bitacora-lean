@@ -112,6 +112,36 @@ table{border-collapse:collapse;width:100%;font-size:14px;min-width:820px}
 th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:middle}
 th{font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600;background:var(--sunk)}
 tr:last-child td{border-bottom:0}
+tr.tot td{font-weight:600;background:var(--sunk)}
+td.hl{font-weight:600}
+table.stats{min-width:980px}
+table.stats td:first-child{white-space:nowrap}
+.coursebar{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 16px;margin-bottom:16px}
+.code.big{font-size:20px;padding:4px 12px}
+.check{display:inline-flex;gap:8px;align-items:center;font-size:14px;cursor:pointer}
+.check input{width:18px;height:18px;accent-color:var(--accent)}
+.mini{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin:12px 0}
+.mini div{background:var(--bg);border-radius:8px;padding:8px 10px}
+.mini b{display:block;font-family:var(--f-display);font-size:24px;font-variant-numeric:tabular-nums;line-height:1.2}
+.mini span{font-size:12.5px;color:var(--muted)}
+.chartlegend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;color:var(--muted);margin-top:6px}
+.vl{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;align-items:start}
+.vlcol{display:flex;flex-direction:column;gap:8px;min-width:0}
+.vlhead{display:grid;gap:2px;padding:2px 2px 4px;border-bottom:2px solid var(--accent)}
+.vlhead h3{font-size:18px}
+.vlhead span{font-size:13px;color:var(--muted)}
+.vl .blk{min-height:0}
+.hyp .par{font-size:12px;color:var(--muted);overflow-wrap:anywhere}
+.toolsel{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:4px 6px;font-size:13px;max-width:140px}
+.rpanel{display:grid;gap:12px;margin-bottom:16px}
+.rpanel .row{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center}
+.rpanel textarea{border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:8px 10px;width:100%;min-height:110px;resize:vertical}
+.armcount{display:flex;flex-wrap:wrap;gap:8px}
+.armcount span{background:var(--bg);border-radius:8px;padding:6px 10px;font-size:14px}
+.armcount b{font-family:var(--f-display);font-size:18px;margin-right:4px;font-variant-numeric:tabular-nums}
+@media (max-width:980px){.vl{grid-template-columns:minmax(0,1fr)}}
+.chartlegend i.dash{background:repeating-linear-gradient(90deg,currentColor 0 5px,transparent 5px 8px)!important}
+.chartlegend i{display:inline-block;width:14px;height:3px;border-radius:2px;vertical-align:middle;margin-right:6px}
 td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
 tbody tr.click{cursor:pointer}
 tbody tr.click:hover td{background:var(--accent-soft)}
@@ -267,10 +297,29 @@ const BLOCKS=[
  {k:"cost",n:"Estructura de costos",q:"¿Cuáles son los costos más importantes?"},
  {k:"rev",n:"Fuentes de ingreso",q:"¿Por qué y cuánto pagarían?"}
 ];
-const BN=Object.fromEntries(BLOCKS.map(b=>[b.k,b.n]));
+const VL_BLOCKS=[
+ {k:"vl_orth",col:"b",n:"Ortodoxias",q:"¿Qué cree la mayoría sobre los clientes, la tecnología, los proveedores o el mercado?",ph:"Lo que todos dan por cierto…",nostatus:true},
+ {k:"vl_belief",col:"b",n:"Creencias contrarias",q:"¿Qué creemos nosotros que otros no ven?",ph:"Nosotros creemos que…"},
+ {k:"vl_problem",col:"p",n:"Problema central",q:"¿Qué obstáculo impide que nuestra creencia se haga realidad?",ph:"El problema central es…",parent:"vl_belief"},
+ {k:"vl_sub",col:"p",n:"Subproblemas",q:"¿Qué debe ser cierto, o hacerse cierto, para resolver el problema?",ph:"Debe ser cierto que…",parent:"vl_problem"},
+ {k:"vl_ifthen",col:"p",n:"Enunciado causal",q:"Si resolvemos estos subproblemas, entonces… porque…",ph:"Si…, entonces…, porque…",parent:"vl_belief"},
+ {k:"vl_exp",col:"a",n:"Experimentos",q:"¿Qué prueba nos dirá si un supuesto es cierto?",ph:"Probaremos…",parent:"vl_sub",st:["Pendiente","Apoya la teoría","Refuta la teoría"]},
+ {k:"vl_res",col:"a",n:"Recursos por adquirir",q:"¿Qué activos, socios o capacidades necesitamos y otros subvaloran?",ph:"Necesitamos conseguir…",parent:"vl_sub",st:["Por conseguir","Conseguido","Descartado"]},
+ {k:"vl_sol",col:"a",n:"Búsqueda de soluciones",q:"¿Dónde y cómo buscaremos la solución de cada subproblema?",ph:"Buscaremos…",parent:"vl_sub",st:["Buscando","Encontrada","Descartada"]}];
+const ALLB=BLOCKS.concat(VL_BLOCKS);
+const BN=Object.fromEntries(ALLB.map(b=>[b.k,b.n]));
+const TOOLS={bmc:"Business Model Canvas",valuelab:"Value Lab"};
+const TOOLSHORT={bmc:"BMC",valuelab:"Value Lab"};
+const blocksFor=tool=>tool==="valuelab"?VL_BLOCKS:BLOCKS;
+const toolBlocks=()=>blocksFor(T.team&&T.team.tool);
+const statusBlocks=()=>toolBlocks().filter(b=>!b.nostatus);
+const blockOf=k=>ALLB.find(x=>x.k===k)||{};
+const stOf=k=>{const b=blockOf(k);return b.st?{pending:b.st[0],valid:b.st[1],invalid:b.st[2]}:ST};
+const itemWord=()=>T.team&&T.team.tool==="valuelab"?"elemento":"hipótesis";
+async function fetchAll(make){let out=[],from=0;for(;;){const {data,error}=await make().range(from,from+999);if(error)return{data:out,error};out=out.concat(data||[]);if(!data||data.length<1000)return{data:out,error:null};from+=1000}}
 const ST={pending:"Por validar",valid:"Validada",invalid:"Invalidada"};
-const TABS=[["resumen","Resumen"],["canvas","Canvas"],["entrevistas","Entrevistas"],["bitacora","Bitácora"],["mentores","Retroalimentación"],["versiones","Versiones"],["equipo","Equipo"]];
-const TABLES={hyps:"hypotheses",interviews:"interviews",logs:"logs",feedback:"feedback",snaps:"snapshots",members:"team_members"};
+const TABS=[["resumen","Resumen"],["canvas","Canvas"],["entrevistas","Entrevistas"],["bitacora","Bitácora"],["mentores","Retroalimentación"],["versiones","Versiones"],["cierres","Cierres"],["equipo","Equipo"]];
+const TABLES={hyps:"hypotheses",interviews:"interviews",logs:"logs",feedback:"feedback",snaps:"snapshots",closures:"weekly_closures",members:"team_members"};
 
 const CFG=window.BITACORA_CONFIG||{};
 const configured=CFG.supabaseUrl&&/^https:\/\//.test(CFG.supabaseUrl)&&CFG.supabaseKey&&!/PEGA_AQUI/.test(CFG.supabaseKey);
@@ -282,7 +331,8 @@ if(CFG.appName){document.title=CFG.appName;document.getElementById("brand").text
 const A={session:null,uid:null,name:"",recovering:false,authMode:"login",authMsg:null,autoOpened:false};
 const H={teams:[],courses:[],loaded:false};
 const C={course:null,teams:[],stats:{},loaded:false};
-const T={id:null,team:null,course:null,role:null,isTeacher:false,members:[],hyps:[],interviews:[],logs:[],feedback:[],snaps:[],tab:"resumen",fbFilter:"open",snapSel:null,q:"",loaded:false};
+const T={id:null,team:null,course:null,role:null,isTeacher:false,members:[],hyps:[],interviews:[],logs:[],feedback:[],snaps:[],closures:[],closuresErr:false,closureSel:null,tab:"resumen",fbFilter:"open",snapSel:null,q:"",loaded:false};
+const J={code:null,preview:null};
 let view="loading",channel=null;
 const names={};
 
@@ -314,6 +364,7 @@ function errText(e){
   if(/rate limit|too many/i.test(m))return"Demasiados intentos seguidos. Espera unos minutos e inténtalo otra vez.";
   if(/Failed to fetch|NetworkError|network/i.test(m))return"Sin conexión con el servidor. Revisa tu internet.";
   if(/Código no válido/.test(m))return"Ese código no existe. Revisa que esté bien escrito.";
+  if(/Could not find the function|schema cache|does not exist/i.test(m))return"La base de datos no está actualizada: en Supabase, ejecuta de nuevo el archivo schema.sql (ver la guía).";
   if(/JWT|session/i.test(m))return"Tu sesión expiró. Vuelve a ingresar.";
   return m||"Algo salió mal. Inténtalo de nuevo.";
 }
@@ -326,6 +377,7 @@ function hue(id){let h=0;for(const c of String(id||""))h=(h*31+c.charCodeAt(0))%
 function av(id,cls=""){const n=nameRaw(id);return `<span class="av ${cls}" style="background:hsl(${hue(id)} 42% 42%)" title="${esc(n||"Persona")}" aria-hidden="true">${esc(initials(n))}</span>`}
 const nameRaw=id=>names[id]||"";
 const nameOf=id=>id&&id===A.uid?"Tú":(names[id]||"Alguien");
+const realName=id=>(id&&id===A.uid?A.name:names[id])||"Sin nombre";
 async function loadNames(ids){
   const need=[...new Set(ids.filter(id=>id&&!(id in names)))];if(!need.length)return;
   need.forEach(id=>names[id]="");
@@ -355,7 +407,7 @@ function doRender(){
   const st=keepState();
   renderTop();
   const m=$("#main");
-  const fn={setup:vSetup,auth:vAuth,recovery:vRecovery,home:vHome,course:vCourse,team:vTeam,loading:()=>`<div class="empty"><h3>Cargando…</h3></div>`,notfound:vNotFound}[view];
+  const fn={joincourse:vJoinCourse,setup:vSetup,auth:vAuth,recovery:vRecovery,home:vHome,course:vCourse,team:vTeam,loading:()=>`<div class="empty"><h3>Cargando…</h3></div>`,notfound:vNotFound}[view];
   m.innerHTML=fn();
   restoreState(st);
 }
@@ -369,8 +421,8 @@ function renderTop(){
   if(view==="team"&&T.team){
     const mem=T.members.slice().sort((a,b)=>a.role===b.role?0:a.role==="mentor"?1:-1);
     $("#people").innerHTML=mem.slice(0,8).map(x=>av(x.user_id,x.role==="mentor"?"mentor":"")).join("")+(mem.length>8?`<span class="mono muted" style="margin-left:6px">+${mem.length-8}</span>`:"");
-    const counts={canvas:T.hyps.length,entrevistas:T.interviews.length,bitacora:T.logs.length,mentores:T.feedback.filter(f=>!f.resolved).length,versiones:T.snaps.length,equipo:T.members.length};
-    $("#tabs").innerHTML=TABS.map(([k,n])=>`<button class="tab" role="tab" aria-selected="${T.tab===k}" data-act="tab" data-tab="${k}">${n}${counts[k]?`<span class="n">${counts[k]}</span>`:""}</button>`).join("");
+    const counts={canvas:T.hyps.length,entrevistas:T.interviews.length,bitacora:T.logs.length,mentores:T.feedback.filter(f=>!f.resolved).length,versiones:T.snaps.length,cierres:T.closures.length,equipo:T.members.length};
+    $("#tabs").innerHTML=TABS.map(([k,n])=>`<button class="tab" role="tab" aria-selected="${T.tab===k}" data-act="tab" data-tab="${k}">${k==="canvas"?(T.team.tool==="valuelab"?"Value Lab":T.team.tool==="bmc"?"Canvas":"Herramienta"):n}${counts[k]?`<span class="n">${counts[k]}</span>`:""}</button>`).join("");
   }else{$("#people").innerHTML="";$("#tabs").innerHTML=""}
 }
 
@@ -386,6 +438,7 @@ async function route(){
     if(T.id===p[1]&&view==="team"){T.tab=tab;render();return}
     T.tab=tab;await openTeam(p[1]);return}
   leaveTeam();
+  if(p[0]==="unirse"&&J.preview){view="joincourse";render();return}
   if(p[0]==="curso"&&p[1]){await openCourse(p[1]);return}
   await openHome();
 }
@@ -474,14 +527,30 @@ function vHome(){
   return `<div class="viewhead"><div><h2>Hola${first?", "+esc(first):""}</h2><p>Entra a tu equipo, únete a uno nuevo con un código, o administra tus cursos si eres profesor/a.</p></div></div>
   <section class="section"><h2>Mis equipos</h2>
     ${H.teams.length?`<div class="cards">${H.teams.map(m=>`<a class="card" href="#/equipo/${esc(m.team.id)}"><span class="label">${esc(m.team.course?.name||"")}</span><h3>${esc(m.team.name)}</h3>${m.team.description?`<span class="muted" style="font-size:14px">${esc(trim(m.team.description,110))}</span>`:""}<span><span class="tag${m.role==="mentor"?" mentor":""}">${m.role==="mentor"?"Mentor":"Estudiante"}</span></span></a>`).join("")}</div>`
-    :`<div class="note">Todavía no perteneces a ningún equipo. Pide a tu profesor/a el <b>código de 6 caracteres</b> de tu equipo y escríbelo aquí abajo.</div>`}
-    <form class="inline" data-form="join" style="margin-top:14px"><label class="label" for="join-code">Unirme con un código</label><input id="join-code" data-keep placeholder="Ej.: 7F3A9C" maxlength="12" autocomplete="off" style="text-transform:uppercase;max-width:200px"><button class="btn primary" type="submit">Unirme</button></form>
+    :`<div class="note">Todavía no perteneces a ningún equipo. Pide a tu profesor/a el <b>código del curso</b> y escríbelo aquí abajo: luego podrás unirte al equipo de tus compañeros o crear uno nuevo.</div>`}
+    <form class="inline" data-form="join" style="margin-top:14px"><label class="label" for="join-code">Unirme con un código</label><input id="join-code" data-keep placeholder="Ej.: 7F3A9C" maxlength="12" autocomplete="off" style="text-transform:uppercase;max-width:200px"><button class="btn primary" type="submit">Continuar</button></form>
+    <p class="muted" style="font-size:13px;margin:6px 0 0">Sirve el código del curso, el de un equipo o el de mentor.</p>
   </section>
   <section class="section"><h2>Cursos que dicto</h2>
     ${H.courses.length?`<div class="cards">${H.courses.map(c=>`<a class="card" href="#/curso/${esc(c.id)}"><span class="label">Curso</span><h3>${esc(c.name)}</h3><span class="muted" style="font-size:14px">${(c.teams&&c.teams[0]?c.teams[0].count:0)} equipos</span></a>`).join("")}</div>`
     :`<p class="muted" style="margin:0 0 10px">Si eres profesor/a, crea un curso y luego sus equipos. Cada equipo recibe un código para estudiantes y otro para mentores.</p>`}
     <form class="inline" data-form="newcourse" style="margin-top:14px"><input id="course-name" data-keep placeholder="Nombre del curso, ej.: Emprendimiento · Sección 2" maxlength="100"><button class="btn" type="submit">Crear curso</button></form>
   </section>`;
+}
+
+
+/* ================= unirse a un curso ================= */
+function vJoinCourse(){
+  const c=J.preview;if(!c)return vHome();
+  const mine=c.my_team&&c.teams.find(t=>t.id===c.my_team);
+  const intro=mine?"Ya perteneces a un equipo de este curso.":c.allow_team_creation?"Únete al equipo de tus compañeros o crea uno nuevo. Solo puedes estar en un equipo por curso.":"Elige tu equipo. Solo puedes estar en un equipo por curso.";
+  if(mine)return `<div class="viewhead"><div><span class="label">Curso</span><h2>${esc(c.name)}</h2><p>${intro}</p></div></div>
+    <div class="note">Tu equipo es <b>${esc(mine.name)}</b>. Si quieres cambiarte, primero sal de él desde su pestaña <b>Equipo</b>.</div>
+    <p><a class="btn primary" href="#/equipo/${esc(mine.id)}">Ir a mi equipo</a></p>`;
+  return `<div class="viewhead"><div><span class="label">Curso</span><h2>${esc(c.name)}</h2><p>${intro}</p></div></div>
+  ${c.allow_team_creation?`<form class="panel compose" data-form="createteam" style="max-width:620px"><label class="label" for="ct-name">Crear un equipo nuevo</label><div class="row"><input id="ct-name" data-keep placeholder="Nombre del equipo o de la idea" maxlength="80" style="flex:1;min-width:0;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:8px 10px"><button class="btn primary" type="submit">Crear y unirme</button></div><span class="muted" style="font-size:13px">Antes de crear uno, revisa abajo si tus compañeros ya lo crearon.</span></form>`:""}
+  <section class="section"><h2>Equipos del curso</h2>${c.teams.length?`<div class="cards">${c.teams.map(t=>`<div class="card"><h3>${esc(t.name)}</h3>${t.description?`<span class="muted" style="font-size:14px">${esc(trim(t.description,110))}</span>`:""}<span style="font-size:13.5px">${t.members.length?esc(t.members.join(", ")):`<span class="muted">Sin integrantes todavía</span>`}</span><span style="margin-top:4px"><button class="btn sm" data-act="jointeam" data-id="${esc(t.id)}">Unirme a este equipo</button></span></div>`).join("")}</div>`
+  :`<div class="empty"><h3>Aún no hay equipos</h3><p>${c.allow_team_creation?"Crea el primero arriba y comparte el código del curso con tus compañeros para que se unan.":"Tu profesor/a todavía no crea los equipos. Vuelve a intentarlo más tarde."}</p></div>`}</section>`;
 }
 
 /* ================= curso (panel del profesor/a) ================= */
@@ -497,20 +566,24 @@ async function loadCourseData(){
   C.teams=teams||[];const ids=C.teams.map(t=>t.id);
   const st={};C.teams.forEach(t=>st[t.id]={est:0,men:0,iv:0,ivw:0,hv:0,hi:0,ht:0,lastLog:null,piv:0,fb:0,ids:[]});
   if(ids.length){
-    const [m,h,i,l,f]=await Promise.all([
+    const [m,h,i,l,f,cl]=await Promise.all([
       sb.from("team_members").select("team_id,role,user_id").in("team_id",ids),
-      sb.from("hypotheses").select("team_id,status").in("team_id",ids).limit(10000),
-      sb.from("interviews").select("team_id,interview_date").in("team_id",ids).limit(10000),
+      fetchAll(()=>sb.from("hypotheses").select("team_id,status,block").in("team_id",ids).order("id")),
+      fetchAll(()=>sb.from("interviews").select("team_id,interview_date").in("team_id",ids).order("id")),
       sb.from("logs").select("team_id,week,pivot").in("team_id",ids).limit(10000),
-      sb.from("feedback").select("team_id,resolved").in("team_id",ids).limit(10000)]);
+      sb.from("feedback").select("team_id,resolved").in("team_id",ids).limit(10000),
+      sb.from("weekly_closures").select("team_id,week,stats,note,closed_by,auto,created_at,updated_at").in("team_id",ids).order("week",{ascending:false}).limit(10000)]);
+    C.closuresErr=!!cl.error;C.closures=cl.data||[];
+    if("rct_mode" in C.course){const [al,co]=await Promise.all([sb.from("assignment_log").select("*").eq("course_id",id).order("changed_at",{ascending:false}).limit(1000),sb.from("research_consents").select("user_id,consent").eq("course_id",id)]);C.assign=al.data||[];C.consents=co.data||[]}
+    C.closures.forEach(x=>{const s=st[x.team_id];if(s&&!s.lastClose)s.lastClose=x});
     const wk=thisWeek();
-    (m.data||[]).forEach(x=>{const s=st[x.team_id];if(x.role==="mentor")s.men++;else s.est++;s.ids.push(x.user_id)});
-    (h.data||[]).forEach(x=>{const s=st[x.team_id];s.ht++;if(x.status==="valid")s.hv++;if(x.status==="invalid")s.hi++});
+    (m.data||[]).forEach(x=>{const s=st[x.team_id];if(x.role==="mentor")s.men++;else{s.est++;(s.sids=s.sids||[]).push(x.user_id)}s.ids.push(x.user_id)});
+    (h.data||[]).forEach(x=>{const s=st[x.team_id];const tm=C.teams.find(t=>t.id===x.team_id);if(tm&&!blocksFor(tm.tool).some(b=>b.k===x.block&&!b.nostatus))return;s.ht++;if(x.status==="valid")s.hv++;if(x.status==="invalid")s.hi++});
     (i.data||[]).forEach(x=>{const s=st[x.team_id];s.iv++;if(keyOf(mondayOf(parseDay(x.interview_date)))===wk)s.ivw++});
     (l.data||[]).forEach(x=>{const s=st[x.team_id];if(!s.lastLog||x.week>s.lastLog)s.lastLog=x.week;if(x.pivot)s.piv++});
     (f.data||[]).forEach(x=>{if(!x.resolved)st[x.team_id].fb++});
-    await loadNames((m.data||[]).map(x=>x.user_id));
-  }
+    await loadNames((m.data||[]).map(x=>x.user_id).concat(C.closures.map(x=>x.closed_by).filter(Boolean)));
+  }else{C.closures=[]}
   C.stats=st;C.loaded=true;render();
 }
 function vCourse(){
@@ -520,21 +593,27 @@ function vCourse(){
     if(s.est===0)flags.push("Sin estudiantes");
     if(s.ivw<t.goal)flags.push(`${s.ivw}/${t.goal} entrevistas esta semana`);
     if(!s.lastLog||s.lastLog<wk)flags.push("Sin bitácora esta semana");
+    if(!C.closuresErr&&(!s.lastClose||s.lastClose.week<wk))flags.push("Sin cierre esta semana");
     return `<tr class="click" data-act="openteam" data-id="${esc(t.id)}"><td><b>${esc(t.name)}</b>${t.description?`<div class="muted" style="font-size:12.5px">${esc(trim(t.description,70))}</div>`:""}</td>
+    ${"rct_mode" in C.course?`<td><select class="toolsel" data-team="${esc(t.id)}" aria-label="Herramienta de ${esc(t.name)}"><option value="" ${!t.tool?"selected":""}>Sin asignar</option><option value="bmc" ${t.tool==="bmc"?"selected":""}>BMC</option><option value="valuelab" ${t.tool==="valuelab"?"selected":""}>Value Lab</option></select></td>`:""}
     <td class="num">${s.est} <span class="muted">+${s.men}m</span></td>
     <td class="num">${s.ivw} <span class="muted">/ ${s.iv}</span></td>
     <td class="num"><span style="color:var(--ok)">${s.hv}</span> · <span style="color:var(--bad)">${s.hi}</span> · ${s.ht}</td>
     <td>${s.lastLog?fmtDay(s.lastLog):"—"}${s.piv?` <span class="tag pivot">${s.piv} pivote${s.piv>1?"s":""}</span>`:""}</td>
     <td class="num">${s.fb}</td>
     <td>${flags.length?`<span class="chip st-pending" title="${esc(flags.join(" · "))}">${esc(flags[0])}${flags.length>1?" +"+(flags.length-1):""}</span>`:`<span class="chip st-valid">Al día</span>`}</td>
-    <td><span class="code" title="Código para estudiantes">${esc(t.student_code)}</span></td>
+    <td>${s.lastClose?`${fmtDay(s.lastClose.week)}<div class="muted" style="font-size:12.5px">${(s.lastClose.stats.totals||{}).changes||0} cambios${s.lastClose.auto?" · automático":""}</div>`:"—"}</td>
     <td><span class="code" title="Código para mentores">${esc(t.mentor_code)}</span></td></tr>`}).join("");
   return `<div class="viewhead"><div><h2>${esc(C.course.name)}</h2><p>Panel del curso. Haz clic en un equipo para ver su trabajo y dejar comentarios.</p></div><span class="spacer"></span>
-    ${C.teams.length?`<button class="btn" data-act="exportcourse">Descargar resumen (CSV)</button>`:""}<button class="btn" data-act="renamecourse">Renombrar</button></div>
+    ${C.teams.length?`<button class="btn" data-act="exportcourse">Descargar resumen (CSV)</button>`:""}${C.closures.length?`<button class="btn" data-act="exportclosures">Descargar cierres (CSV)</button>`:""}<button class="btn" data-act="renamecourse">Renombrar</button></div>
+  ${C.course.join_code!==undefined?`<div class="coursebar"><span class="label">Código del curso</span><span class="code big">${esc(C.course.join_code)}</span><button class="btn sm" data-act="copycode" data-code="${esc(C.course.join_code)}">Copiar</button><span><button class="btn sm ghost" data-act="regencourse">Generar código nuevo</button></span><span class="spacer"></span><label class="check"><input type="checkbox" id="allowcreate" ${C.course.allow_team_creation?"checked":""}> Los estudiantes pueden crear sus propios equipos</label></div>`
+  :`<div class="banner warn">Para usar el código del curso y los cierres semanales, ejecuta de nuevo el archivo <b>schema.sql</b> en Supabase (ver la guía).</div>`}
+  ${researchPanel()}
+  ${C.teams.length&&!C.closuresErr?`<div class="toolbar"><span class="muted" style="font-size:14px">Semana del ${fmtDay(wk)}: ${C.teams.filter(t=>C.stats[t.id].lastClose&&C.stats[t.id].lastClose.week===wk).length} de ${C.teams.length} equipos cerrados.</span><span><button class="btn sm" data-act="closeall">Cerrar la semana de todos los equipos</button></span></div>`:""}
   <form class="toolbar" data-form="newteam"><input type="text" id="team-name" data-keep placeholder="Nombre del nuevo equipo" maxlength="80" aria-label="Nombre del nuevo equipo"><button class="btn primary" type="submit">Crear equipo</button></form>
-  ${C.teams.length?`<div class="tablewrap"><table><thead><tr><th>Equipo</th><th>Integrantes</th><th>Entrevistas<br>semana / total</th><th>Hipótesis<br>✓ · ✗ · total</th><th>Última bitácora</th><th>Comentarios<br>abiertos</th><th>Estado</th><th>Código<br>estudiantes</th><th>Código<br>mentores</th></tr></thead><tbody>${rows}</tbody></table></div>
-  <div class="note" style="margin-top:16px"><b>Cómo invitar:</b><ol><li>Cada estudiante crea su cuenta en esta página con su correo y una contraseña.</li><li>En la pantalla de inicio escribe el <b>código de estudiantes</b> de su equipo.</li><li>Los mentores hacen lo mismo con el <b>código de mentores</b>: pueden leer todo y comentar, pero no editar el canvas.</li></ol></div>`
-  :`<div class="empty"><h3>Este curso aún no tiene equipos</h3><p>Escribe el nombre del primer equipo arriba. Se creará con sus códigos de acceso.</p></div>`}
+  ${C.teams.length?`<div class="tablewrap"><table><thead><tr><th>Equipo</th>${"rct_mode" in C.course?"<th>Herramienta</th>":""}<th>Integrantes</th><th>Entrevistas<br>semana / total</th><th>Hipótesis<br>✓ · ✗ · total</th><th>Última bitácora</th><th>Comentarios<br>abiertos</th><th>Estado</th><th>Último<br>cierre</th><th>Código<br>mentores</th></tr></thead><tbody>${rows}</tbody></table></div>
+  <div class="note" style="margin-top:16px"><b>Cómo invitar:</b><ol><li>Comparte el <b>código del curso</b> con tus estudiantes.</li><li>Cada estudiante crea su cuenta en esta página, escribe el código y elige su equipo o crea uno nuevo (si lo permites arriba). Solo pueden estar en un equipo por curso.</li><li>Los mentores usan el <b>código de mentores</b> de cada equipo: pueden leer todo y comentar, pero no editar el canvas. Los estudiantes también ven ese código para invitar a su mentor.</li></ol></div>`
+  :`<div class="empty"><h3>Este curso aún no tiene equipos</h3><p>Comparte el código del curso para que los estudiantes creen o elijan su equipo, o crea uno tú escribiendo su nombre arriba.</p></div>`}
   <div style="margin-top:28px;display:flex;justify-content:flex-end" id="delcourse"><button class="btn sm ghost" data-act="delcourse">Eliminar este curso</button></div>`;
 }
 
@@ -545,13 +624,14 @@ function refreshAll(){if(view==="team"&&T.id&&T.loaded)Object.keys(TABLES).forEa
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")refreshAll()});
 async function openTeam(id){
   leaveTeam();view="team";T.id=id;T.snapSel=null;T.q="";render();
-  const {data:team,error}=await sb.from("teams").select("*,course:courses(id,name,owner_id)").eq("id",id).maybeSingle();
+  const {data:team,error}=await sb.from("teams").select("*,course:courses(*)").eq("id",id).maybeSingle();
   if(T.id!==id)return;
   if(error||!team){view="notfound";render();return}
   T.team=team;T.course=team.course;T.isTeacher=team.course&&team.course.owner_id===A.uid;
   await Promise.all(Object.keys(TABLES).map(k=>refetch(k,true)));
   if(T.id!==id)return;
   T.loaded=true;lsSet("bl-team",id);
+  checkConsent();
   channel=sb.channel("team-"+id);
   Object.entries(TABLES).forEach(([k,tbl])=>channel.on("postgres_changes",{event:"*",schema:"public",table:tbl,filter:"team_id=eq."+id},()=>scheduleRefetch(k)));
   channel.subscribe();
@@ -562,16 +642,17 @@ const pending={};
 function scheduleRefetch(k){clearTimeout(pending[k]);pending[k]=setTimeout(()=>refetch(k),250)}
 async function refetch(k,silent){
   const id=T.id;if(!id)return;
-  const order={hyps:"created_at",interviews:"interview_date",logs:"week",feedback:"created_at",snaps:"created_at",members:"joined_at"}[k];
+  const order={hyps:"created_at",interviews:"interview_date",logs:"week",feedback:"created_at",snaps:"created_at",closures:"week",members:"joined_at"}[k];
   const {data,error}=await sb.from(TABLES[k]).select("*").eq("team_id",id).order(order,{ascending:k==="hyps"||k==="members"}).limit(5000);
   if(T.id!==id)return;
-  if(error){console.warn(k,error);return}
+  if(k==="closures")T.closuresErr=!!error;
+  if(error){console.warn(k,error);if(!silent)render();return}
   T[k]=data||[];
   if(k==="members"){
     T.role=(T.members.find(m=>m.user_id===A.uid)||{}).role||null;
     if(!T.role&&!T.isTeacher&&T.loaded){toast("Ya no perteneces a este equipo.");go("#/");return}
   }
-  const ids=[];T.members.forEach(m=>ids.push(m.user_id));["hyps","interviews","logs","feedback","snaps"].forEach(c=>T[c].forEach(x=>{ids.push(x.created_by);if(x.updated_by)ids.push(x.updated_by)}));
+  const ids=[];T.members.forEach(m=>ids.push(m.user_id));["hyps","interviews","logs","feedback","snaps","closures"].forEach(c=>T[c].forEach(x=>{if(x.created_by)ids.push(x.created_by);if(x.updated_by)ids.push(x.updated_by);if(x.closed_by)ids.push(x.closed_by)}));
   if(T.course)ids.push(T.course.owner_id);
   await loadNames(ids);
   if(!silent)render();
@@ -587,7 +668,7 @@ function vTeam(){
   let pre="";
   if(T.role==="mentor")pre=`<div class="banner"><span>Participas como <b>mentor</b>: puedes ver todo y dejar comentarios en <b>Retroalimentación</b>. Solo el equipo edita el canvas.</span></div>`;
   else if(T.isTeacher)pre=`<div class="banner"><span>Estás viendo este equipo como <b>profesor/a</b>. Puedes revisar, comentar y editar.</span></div>`;
-  const v={resumen:vResumen,canvas:vCanvas,entrevistas:vEntrevistas,bitacora:vBitacora,mentores:vMentores,versiones:vVersiones,equipo:vEquipo}[T.tab];
+  const v={resumen:vResumen,canvas:vCanvas,entrevistas:vEntrevistas,bitacora:vBitacora,mentores:vMentores,versiones:vVersiones,cierres:vCierres,equipo:vEquipo}[T.tab];
   return pre+v();
 }
 
@@ -597,7 +678,7 @@ function vResumen(){
   const byWk={};T.interviews.forEach(iv=>{const k=keyOf(mondayOf(parseDay(iv.interview_date)));byWk[k]=(byWk[k]||0)+1});
   const v=T.hyps.filter(h=>h.status==="valid").length,inv=T.hyps.filter(h=>h.status==="invalid").length,pen=T.hyps.length-v-inv;
   const openFb=T.feedback.filter(f=>!f.resolved).length,pivots=T.logs.filter(l=>l.pivot).length;
-  return `<div class="viewhead"><div><h2>${esc(t.name)}</h2>${t.description?`<p>${esc(t.description)}</p>`:canEdit()?`<p>Agrega una descripción de la idea en la pestaña <b>Equipo</b>.</p>`:""}</div></div>
+  return `<div class="viewhead"><div><h2>${esc(t.name)}</h2>${T.team.tool?`<span class="tag" style="margin-top:6px">${TOOLS[T.team.tool]}</span>`:""}${t.description?`<p>${esc(t.description)}</p>`:canEdit()?`<p>Agrega una descripción de la idea en la pestaña <b>Equipo</b>.</p>`:""}</div></div>
   <div class="kpis">
     <div class="kpi"><div class="label">Entrevistas</div><div class="v">${T.interviews.length}</div><div class="s"><span class="mono">${byWk[wk]||0}/${goal}</span> esta semana</div></div>
     <div class="kpi"><div class="label">Hipótesis validadas</div><div class="v" style="color:var(--ok)">${v}</div><div class="s">de ${T.hyps.length} en el canvas</div></div>
@@ -606,7 +687,7 @@ function vResumen(){
   </div>
   <div class="grid2">
     <div class="panel"><h3>Entrevistas por semana</h3><div class="chartbox">${weekChart(byWk,goal)}</div></div>
-    <div class="panel"><h3>Validación por bloque</h3><div class="prog">${BLOCKS.map(b=>{const hs=hypsOf(b.k);const n=hs.length||1;const a=hs.filter(h=>h.status==="valid").length,r=hs.filter(h=>h.status==="invalid").length;
+    <div class="panel"><h3>Validación por bloque</h3><div class="prog">${statusBlocks().map(b=>{const hs=hypsOf(b.k);const n=hs.length||1;const a=hs.filter(h=>h.status==="valid").length,r=hs.filter(h=>h.status==="invalid").length;
       return `<span>${b.n}</span><div class="stack" title="${a} validadas, ${r} invalidadas, ${hs.length-a-r} por validar"><span style="width:${a/n*100}%;background:var(--ok)"></span><span style="width:${r/n*100}%;background:var(--bad)"></span><span style="width:${hs.length?(hs.length-a-r)/n*100:0}%;background:var(--wait);opacity:.55"></span></div><span class="mono muted">${a}/${hs.length}</span>`}).join("")}</div>
       <div class="legend" style="margin-top:12px"><span class="chip st-valid">Validada</span><span class="chip st-invalid">Invalidada</span><span class="chip st-pending">Por validar</span></div></div>
   </div>
@@ -629,13 +710,16 @@ function feed(){
   T.logs.forEach(l=>it.push({t:l.created_at,by:l.created_by,txt:`escribió en la bitácora${l.pivot?" un <b>pivote</b>":""}`}));
   T.feedback.forEach(f=>it.push({t:f.created_at,by:f.created_by,txt:`comentó sobre <b>${esc(f.block==="general"?"el proyecto":BN[f.block])}</b>: “${esc(trim(f.text,80))}”`}));
   T.snaps.forEach(s=>it.push({t:s.created_at,by:s.created_by,txt:`guardó la versión <b>${esc(s.label)}</b> del canvas`}));
+  T.closures.forEach(c=>it.push({t:c.updated_at||c.created_at,by:c.closed_by,auto:c.auto,txt:`cerró la semana del <b>${fmtDay(c.week)}</b> (${(c.stats.totals||{}).changes||0} cambios en el canvas)`}));
   it.sort((a,b)=>String(b.t).localeCompare(String(a.t)));
   if(!it.length)return`<p class="muted" style="margin:0">Todavía no hay actividad. Empiecen agregando hipótesis en el Canvas o registrando su primera entrevista.</p>`;
-  return `<ul class="feed">${it.slice(0,10).map(x=>`<li>${av(x.by)}<div><b>${esc(nameOf(x.by))}</b> ${x.txt}<div class="when">${ago(x.t)}</div></div></li>`).join("")}</ul>`;
+  return `<ul class="feed">${it.slice(0,10).map(x=>`<li>${av(x.by)}<div><b>${esc(x.auto?"Cierre automático":nameOf(x.by))}</b> ${x.auto?x.txt.replace(/^cerró/,"·"):x.txt}<div class="when">${ago(x.t)}</div></div></li>`).join("")}</ul>`;
 }
 
 /* --- Canvas --- */
 function vCanvas(){
+  if(!T.team.tool)return `<div class="viewhead"><div><h2>Herramienta del equipo</h2></div></div><div class="empty"><h3>${T.isTeacher?"Este equipo aún no tiene herramienta asignada":"Tu profesor/a aún no asigna la herramienta de este equipo"}</h3><p>${T.isTeacher?"Asígnala desde el panel del curso (columna Herramienta).":"Mientras tanto pueden registrar entrevistas y escribir la bitácora."}</p></div>`;
+  if(T.team.tool==="valuelab")return vValueLab();
   const ev=evidence(),fbc={};T.feedback.filter(f=>!f.resolved).forEach(f=>fbc[f.block]=(fbc[f.block]||0)+1);
   const ed=canEdit();
   return `<div class="viewhead"><div><h2>Business Model Canvas</h2><p>Cada nota es una hipótesis. Ábrela para cambiar su estado; la evidencia sale de las entrevistas.</p></div><span class="spacer"></span><div class="legend"><span class="chip st-pending">Por validar</span><span class="chip st-valid">Validada</span><span class="chip st-invalid">Invalidada</span></div></div>
@@ -649,19 +733,42 @@ function hypModal(id){
   const evs=T.interviews.filter(iv=>iv.evidence&&iv.evidence[id]);
   const fbs=T.feedback.filter(f=>f.block===h.block&&!f.resolved);
   let status=h.status;
-  const md=openModal(`<h2>Hipótesis</h2>
+  const isVL=T.team.tool==="valuelab";
+  const stHtml=bk=>blockOf(bk).nostatus?`<span class="muted" style="font-size:13px">Este componente no tiene estado.</span>`:`<div class="statusbtns">${Object.entries(stOf(bk)).map(([k,n])=>`<button type="button" class="${k}" data-st="${k}" aria-pressed="${k===status}" ${ed?"":"disabled"}>${esc(n)}</button>`).join("")}</div>`;
+  const parHtml=bk=>{const pk=blockOf(bk).parent;if(!isVL||!pk)return"";const opts=hypsOf(pk).filter(x=>x.id!==id);
+    return `<label for="m-parent">Vinculado a (${BN[pk]})</label><select id="m-parent" ${ed?"":"disabled"}><option value="">Sin vincular</option>${opts.map(o=>`<option value="${esc(o.id)}" ${o.id===h.parent_id?"selected":""}>${esc(trim(o.text,90))}</option>`).join("")}</select>`};
+  const md=openModal(`<h2>${isVL?"Elemento del Value Lab":"Hipótesis"}</h2>
   <div class="field"><label for="m-text">Enunciado</label><textarea id="m-text" ${ed?"":"readonly"} maxlength="400">${esc(h.text)}</textarea></div>
-  <div class="fgrid"><div class="field"><label for="m-block">Bloque</label><select id="m-block" ${ed?"":"disabled"}>${BLOCKS.map(b=>`<option value="${b.k}" ${b.k===h.block?"selected":""}>${b.n}</option>`).join("")}</select></div>
-  <div class="field"><label>Estado</label><div class="statusbtns">${Object.entries(ST).map(([k,n])=>`<button type="button" class="${k}" data-st="${k}" aria-pressed="${k===status}" ${ed?"":"disabled"}>${n}</button>`).join("")}</div></div></div>
-  <div><div class="label">Evidencia de entrevistas</div>${evs.length?`<div class="evrow">${evs.map(iv=>`<span class="evchip ${iv.evidence[id]}">${iv.evidence[id]==="apoya"?"Apoya":"Refuta"} · ${esc(iv.person)} · ${fmtDay(iv.interview_date)}</span>`).join("")}</div>`:`<p class="muted" style="margin:4px 0 0">Ninguna entrevista ha evaluado esta hipótesis.</p>`}</div>
+  <div class="fgrid"><div class="field"><label for="m-block">${isVL?"Componente":"Bloque"}</label><select id="m-block" ${ed?"":"disabled"}>${toolBlocks().map(b=>`<option value="${b.k}" ${b.k===h.block?"selected":""}>${b.n}</option>`).join("")}</select></div>
+  <div class="field"><label>Estado</label><div id="m-stwrap">${stHtml(h.block)}</div></div>
+  <div class="field full" id="m-parwrap">${parHtml(h.block)}</div></div>
+  <div><div class="label">Evidencia de entrevistas</div>${evs.length?`<div class="evrow">${evs.map(iv=>`<span class="evchip ${iv.evidence[id]}">${iv.evidence[id]==="apoya"?"Apoya":"Refuta"} · ${esc(iv.person)} · ${fmtDay(iv.interview_date)}</span>`).join("")}</div>`:`<p class="muted" style="margin:4px 0 0">Ninguna entrevista ha evaluado esta ${itemWord()}.</p>`}</div>
   ${fbs.length?`<div><div class="label">Comentarios abiertos en este bloque</div>${fbs.map(f=>`<p style="margin:6px 0 0;font-size:14px"><b>${esc(nameOf(f.created_by))}:</b> ${esc(f.text)}</p>`).join("")}</div>`:""}
   <p class="muted" style="margin:0;font-size:12.5px">Creada por ${esc(nameOf(h.created_by))} ${ago(h.created_at)}${h.updated_at?` · editada ${ago(h.updated_at)} por ${esc(nameOf(h.updated_by))}`:""}</p>
   <div class="acts">${ed?`<span class="left" id="m-del"><button class="btn danger sm" data-del>Eliminar</button></span>`:""}<button class="btn" data-close>Cerrar</button>${ed?`<button class="btn primary" data-save>Guardar</button>`:""}</div>`);
-  md.querySelectorAll("[data-st]").forEach(b=>b.onclick=()=>{status=b.dataset.st;md.querySelectorAll("[data-st]").forEach(x=>x.setAttribute("aria-pressed",x.dataset.st===status))});
-  const sv=md.querySelector("[data-save]");if(sv)sv.onclick=async()=>{const text=md.querySelector("#m-text").value.trim();if(!text){toast("Escribe el enunciado de la hipótesis.");return}
-    sv.disabled=true;const ok=await run(sb.from("hypotheses").update({text,block:md.querySelector("#m-block").value,status,updated_at:now(),updated_by:A.uid}).eq("id",id),"Hipótesis guardada");
+  const bindSt=()=>md.querySelectorAll("[data-st]").forEach(b=>b.onclick=()=>{status=b.dataset.st;md.querySelectorAll("[data-st]").forEach(x=>x.setAttribute("aria-pressed",x.dataset.st===status))});bindSt();
+  const bsel=md.querySelector("#m-block");if(bsel)bsel.onchange=()=>{md.querySelector("#m-stwrap").innerHTML=stHtml(bsel.value);md.querySelector("#m-parwrap").innerHTML=parHtml(bsel.value);bindSt()};
+  const sv=md.querySelector("[data-save]");if(sv)sv.onclick=async()=>{const text=md.querySelector("#m-text").value.trim();if(!text){toast("Escribe el enunciado.");return}
+    const block=md.querySelector("#m-block").value;const upd={text,block,status:blockOf(block).nostatus?"pending":status,updated_at:now(),updated_by:A.uid};
+    if(isVL){const ps=md.querySelector("#m-parent");upd.parent_id=ps&&ps.value?ps.value:null}
+    sv.disabled=true;const ok=await run(sb.from("hypotheses").update(upd).eq("id",id),isVL?"Elemento guardado":"Hipótesis guardada");
     if(ok){closeModal();refetch("hyps")}else sv.disabled=false};
-  confirmDel(md,"Se eliminará esta hipótesis.",async()=>{if(await run(sb.from("hypotheses").delete().eq("id",id),"Hipótesis eliminada")){closeModal();refetch("hyps")}});
+  confirmDel(md,`Se eliminará esta ${itemWord()}.`,async()=>{if(await run(sb.from("hypotheses").delete().eq("id",id),"Eliminado")){closeModal();refetch("hyps")}});
+}
+
+function vlItem(h,ev,byId){
+  const e=ev[h.id],b=blockOf(h.block),par=h.parent_id&&byId[h.parent_id];
+  return `<button class="hyp" data-act="hyp" data-id="${esc(h.id)}"><span class="t">${esc(h.text)}</span>${par?`<span class="par">↳ ${esc(trim(par.text,60))}</span>`:""}${b.nostatus&&!e?"":`<span class="meta">${b.nostatus?"":`<span class="chip st-${h.status}">${esc(stOf(h.block)[h.status])}</span>`}${e?`<span class="ev"><span class="a">+${e.a}</span> <span class="r">−${e.r}</span></span>`:""}</span>`}</button>`;
+}
+function vValueLab(){
+  const ev=evidence(),fbc={};T.feedback.filter(f=>!f.resolved).forEach(f=>fbc[f.block]=(fbc[f.block]||0)+1);
+  const ed=canEdit(),byId=Object.fromEntries(T.hyps.map(h=>[h.id,h]));
+  const cols=[["b","1 · Creencias","Lo que vemos y otros no ven"],["p","2 · Problemas","Lo que hay que resolver para que la creencia se cumpla"],["a","3 · Acciones","Cómo avanzamos: probar, conseguir y buscar"]];
+  return `<div class="viewhead"><div><h2>Value Lab</h2><p>Construyan su teoría de valor: de una creencia contraria a un problema central, sus subproblemas y las acciones para resolverlos. Abran cada elemento para cambiar su estado o vincularlo con el anterior.</p></div></div>
+  <div class="vl">${cols.map(([c,t,d])=>`<div class="vlcol"><div class="vlhead"><h3>${t}</h3><span>${d}</span></div>${VL_BLOCKS.filter(b=>b.col===c).map(b=>{const hs=hypsOf(b.k);
+    return `<section class="blk" aria-label="${esc(b.n)}"><header><h3>${b.n}</h3><span class="cnt">${fbc[b.k]?`<span class="fbdot" title="Comentarios abiertos">● ${fbc[b.k]}</span>`:""}<span>${hs.length}</span></span></header><p class="q">${b.q}</p>
+    <div class="hyps">${hs.map(h=>vlItem(h,ev,byId)).join("")||`<span class="empty-blk">Sin elementos todavía.</span>`}</div>
+    ${ed?`<form class="addf" data-form="addhyp" data-block="${b.k}"><input id="add-${b.k}" data-keep placeholder="${esc(b.ph)}" aria-label="Nuevo elemento en ${esc(b.n)}" maxlength="400"><button class="btn sm" type="submit">Agregar</button></form>`:""}</section>`}).join("")}</div>`).join("")}</div>`;
 }
 
 /* --- Entrevistas --- */
@@ -690,7 +797,7 @@ function ivModal(id){
     <div class="field full"><label for="i-notes">Notas de la conversación</label><textarea id="i-notes" ${ro?"readonly":""}>${esc(iv?.notes)}</textarea></div>
     <div class="field full"><label for="i-ins">Aprendizaje clave</label><textarea id="i-ins" style="min-height:60px" ${ro?"readonly":""}>${esc(iv?.insights)}</textarea></div>
   </div>
-  <div class="field"><label>Hipótesis evaluadas</label>${T.hyps.length?`<div class="evpick">${BLOCKS.filter(b=>hypsOf(b.k).length).map(b=>`<div class="grp">${b.n}</div>${hypsOf(b.k).map(h=>`<div class="opt"><span>${esc(h.text)}</span><select data-hid="${esc(h.id)}" aria-label="Resultado para la hipótesis" ${ro?"disabled":""}><option value="">—</option><option value="apoya" ${e[h.id]==="apoya"?"selected":""}>Apoya</option><option value="refuta" ${e[h.id]==="refuta"?"selected":""}>Refuta</option></select></div>`).join("")}`).join("")}</div>`:`<p class="muted" style="margin:0">Agreguen hipótesis en el Canvas para poder vincularlas.</p>`}</div>
+  <div class="field"><label>${T.team.tool==="valuelab"?"Elementos del Value Lab evaluados":"Hipótesis evaluadas"}</label>${statusBlocks().some(b=>hypsOf(b.k).length)?`<div class="evpick">${statusBlocks().filter(b=>hypsOf(b.k).length).map(b=>`<div class="grp">${b.n}</div>${hypsOf(b.k).map(h=>`<div class="opt"><span>${esc(h.text)}</span><select data-hid="${esc(h.id)}" aria-label="Resultado para la hipótesis" ${ro?"disabled":""}><option value="">—</option><option value="apoya" ${e[h.id]==="apoya"?"selected":""}>Apoya</option><option value="refuta" ${e[h.id]==="refuta"?"selected":""}>Refuta</option></select></div>`).join("")}`).join("")}</div>`:`<p class="muted" style="margin:0">Agreguen elementos en ${T.team.tool==="valuelab"?"el Value Lab":"el Canvas"} para poder vincularlos.</p>`}</div>
   ${iv?`<p class="muted" style="margin:0;font-size:12.5px">Registrada por ${esc(nameOf(iv.created_by))} ${ago(iv.created_at)}</p>`:""}
   <div class="acts">${iv&&!ro?`<span class="left" id="m-del"><button class="btn danger sm" data-del>Eliminar</button></span>`:""}<button class="btn" data-close>${ro?"Cerrar":"Cancelar"}</button>${ro?"":`<button class="btn primary" data-save>Guardar</button>`}</div>`);
   const sv=md.querySelector("[data-save]");if(sv)sv.onclick=async()=>{
@@ -736,7 +843,7 @@ function vMentores(){
   const f=T.fbFilter;
   const list=T.feedback.filter(x=>f==="all"||(f==="open"?!x.resolved:x.resolved));
   return `<div class="viewhead"><div><h2>Retroalimentación</h2><p>Comentarios de mentores, profesor/a y equipo sobre el proyecto o un bloque del canvas. Márquenlos como resueltos cuando los atiendan.</p></div></div>
-  <form class="panel compose" data-form="addfb"><div class="row"><label for="fb-block" class="label">Sobre</label><select id="fb-block" data-keep style="width:auto"><option value="general">El proyecto en general</option>${BLOCKS.map(b=>`<option value="${b.k}">${b.n}</option>`).join("")}</select>${roleTag(A.uid)}</div>
+  <form class="panel compose" data-form="addfb"><div class="row"><label for="fb-block" class="label">Sobre</label><select id="fb-block" data-keep style="width:auto"><option value="general">El proyecto en general</option>${toolBlocks().map(b=>`<option value="${b.k}">${b.n}</option>`).join("")}</select>${roleTag(A.uid)}</div>
   <textarea id="fb-text" data-keep placeholder="Ej.: Antes de hablar de precio, confirmen que el dolor es frecuente. ¿Cuántos entrevistados lo mencionaron sin que les preguntaran?" aria-label="Comentario" maxlength="2000"></textarea><div class="row"><span class="spacer"></span><button class="btn primary" type="submit">Publicar comentario</button></div></form>
   <div class="toolbar"><div class="seg" role="group" aria-label="Filtrar comentarios">${[["open","Abiertos"],["resolved","Resueltos"],["all","Todos"]].map(([k,n])=>`<button data-act="fbf" data-f="${k}" aria-pressed="${f===k}">${n}</button>`).join("")}</div></div>
   ${list.length?`<div class="list">${list.map(x=>`<article class="item fb${x.resolved?" resolved":""}">${av(x.created_by)}<div style="min-width:0">
@@ -783,11 +890,158 @@ function vEquipo(){
       ${T.course?`<div class="mrow">${av(T.course.owner_id)}<span>${esc(nameOf(T.course.owner_id))}</span><span class="tag teacher">Profesor/a</span></div>`:""}
       ${mem.map(m=>`<div class="mrow">${av(m.user_id,m.role==="mentor"?"mentor":"")}<span>${esc(nameOf(m.user_id))}</span><span class="tag${m.role==="mentor"?" mentor":""}">${m.role==="mentor"?"Mentor":"Estudiante"}</span><span class="spacer"></span>${T.isTeacher?`<span id="rm-${esc(m.user_id)}"><button class="btn sm ghost" data-act="rmmember" data-id="${esc(m.user_id)}">Quitar</button></span>`:""}</div>`).join("")||`<p class="muted">Aún no hay integrantes.</p>`}
     </div>
-    ${T.role==="estudiante"||T.isTeacher?`<div class="note" style="margin-top:12px">Código para que compañeros se unan como estudiantes: <span class="code">${esc(t.student_code)}</span>${T.isTeacher?`<br>Código para mentores: <span class="code">${esc(t.mentor_code)}</span>`:""}</div>`:""}
+    ${T.role==="estudiante"||T.isTeacher?`<div class="note" style="margin-top:12px">Código para que compañeros se unan como estudiantes: <span class="code">${esc(t.student_code)}</span><br>Código para invitar a un mentor: <span class="code">${esc(t.mentor_code)}</span></div>`:""}
     ${T.isTeacher?`<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap" id="regen"><button class="btn sm" data-act="regen">Generar códigos nuevos</button><span id="delteam"><button class="btn sm danger" data-act="delteam">Eliminar equipo</button></span></div>`:""}
+    ${T.course&&T.course.research_enabled&&T.role==="estudiante"?`<div class="note" style="margin-top:12px">Participación en la investigación: <b>${T.consent===true?"aceptaste":T.consent===false?"no aceptaste":"sin responder"}</b> · <button class="linkbtn" data-act="consent">${T.consent==null?"Responder":"Cambiar respuesta"}</button></div>`:""}
     ${T.role?`<div style="margin-top:10px" id="leave"><button class="btn sm ghost" data-act="leave">Salir de este equipo</button></div>`:""}
     </div>
   </div>`;
+}
+
+
+/* --- Cierres semanales --- */
+const SK=[["total","Total"],["valid","Validadas"],["invalid","Invalidadas"],["pending","Por validar"],["added","Nuevas"],["removed","Eliminadas"],["moved_in","Movidas aquí"],["edited","Texto editado"],["validated","Validadas en la semana"],["invalidated","Invalidadas en la semana"],["changes","Cambios"]];
+const SKEYS=["total","valid","invalid","pending","added","removed","moved_in","edited","validated","invalidated","reopened","status_changed","changes"];
+// Mismo cálculo que la función _close_week de la base de datos (para la vista previa)
+function computeClosure(cur,prev){
+  const P={},C={};(prev||[]).forEach(i=>P[i.id]=i);cur.forEach(i=>C[i.id]=i);
+  const blocks={};ALLB.forEach(b=>{blocks[b.k]={};SKEYS.forEach(k=>blocks[b.k][k]=0)});
+  for(const c of cur){const s=blocks[c.block];if(!s)continue;const p=P[c.id];
+    s.total++;s[c.status]++;
+    if(!p)s.added++;else{if(p.block!==c.block)s.moved_in++;if(p.text!==c.text)s.edited++;if(p.status!==c.status){s.status_changed++;if(c.status==="pending")s.reopened++}}
+    if(c.status==="valid"&&(!p||p.status!=="valid"))s.validated++;
+    if(c.status==="invalid"&&(!p||p.status!=="invalid"))s.invalidated++;}
+  for(const p of prev||[])if(!C[p.id]&&blocks[p.block])blocks[p.block].removed++;
+  const totals={};SKEYS.forEach(k=>totals[k]=0);
+  for(const s of Object.values(blocks)){s.changes=s.added+s.removed+s.moved_in+s.edited+s.status_changed;SKEYS.forEach(k=>totals[k]+=s[k])}
+  return{blocks,totals};
+}
+function statsTable(st,bl){
+  const n=v=>Number(v)||0;
+  const NS=new Set(["valid","invalid","pending","validated","invalidated"]);
+  const rows=(bl||toolBlocks()).map(b=>{const s=st.blocks[b.k]||{};return `<tr><td>${b.n}</td>${SK.map(([k])=>b.nostatus&&NS.has(k)?`<td class="num muted">—</td>`:`<td class="num${k==="changes"?" hl":""}"${k==="valid"&&n(s[k])?' style="color:var(--ok)"':k==="invalid"&&n(s[k])?' style="color:var(--bad)"':""}>${n(s[k])}</td>`).join("")}</tr>`}).join("");
+  const tot=`<tr class="tot"><td>Total</td>${SK.map(([k])=>`<td class="num">${n((st.totals||{})[k])}</td>`).join("")}</tr>`;
+  return `<div class="tablewrap"><table class="stats"><thead><tr><th>Componente</th>${SK.map(([,l])=>`<th>${l}</th>`).join("")}</tr></thead><tbody>${rows}${tot}</tbody></table></div>`;
+}
+function miniStats(t){const n=v=>Number(v)||0;
+  return `<div class="mini"><div><b>${n(t.changes)}</b><span>cambios</span></div><div><b>${n(t.added)}</b><span>nuevas</span></div><div><b style="color:var(--ok)">${n(t.validated)}</b><span>validadas en la semana</span></div><div><b style="color:var(--bad)">${n(t.invalidated)}</b><span>invalidadas en la semana</span></div><div><b>${n(t.removed)}</b><span>eliminadas</span></div><div><b>${n(t.total)}</b><span>hipótesis en total</span></div></div>`}
+function evoChart(list){
+  const W=600,H=230,L=34,R=14,Tp=14,B=30;const n=list.length;
+  const val=(c,k)=>Number((c.stats.totals||{})[k])||0;
+  const max=Math.max(1,...list.map(c=>val(c,"total")));const step=Math.max(1,Math.ceil(max/5));const top=step*5;
+  const x=i=>n===1?(L+W-R)/2:L+i*(W-L-R)/(n-1),y=v=>Tp+(H-Tp-B)*(1-v/top);
+  let g="";for(let t=0;t<=top;t+=step)g+=`<line x1="${L}" x2="${W-R}" y1="${y(t)}" y2="${y(t)}" stroke="var(--line)"/><text x="${L-6}" y="${y(t)+4}" text-anchor="end" font-size="11" fill="var(--muted)" font-family="IBM Plex Mono,monospace">${t}</text>`;
+  const every=Math.ceil(n/8);
+  const xl=list.map((c,i)=>i%every===0||i===n-1?`<text x="${x(i)}" y="${H-10}" text-anchor="middle" font-size="10.5" fill="var(--muted)">${fmtShort(parseDay(c.week))}</text>`:"").join("");
+  const ser=[["total","Total de hipótesis","var(--accent)"],["valid","Validadas","var(--ok)"],["invalid","Invalidadas","var(--bad)"]];
+  const lines=ser.slice().reverse().map(([k,,col])=>{const pts=list.map((c,i)=>`${x(i)},${y(val(c,k))}`).join(" ");const li=n-1;
+    return `<polyline points="${pts}" fill="none" stroke="${col}" stroke-width="2.2" stroke-linejoin="round"${k==="invalid"?' stroke-dasharray="6 4"':""}/>${list.map((c,i)=>`<circle cx="${x(i)}" cy="${y(val(c,k))}" r="${i===li?4:2.6}" fill="${col}"><title>Semana del ${fmtDay(c.week)}: ${val(c,k)}</title></circle>`).join("")}`}).join("");
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" style="display:block;max-width:720px" role="img" aria-label="Evolución del canvas por semana" preserveAspectRatio="xMinYMid meet">${g}${xl}${lines}</svg><div class="chartlegend">${ser.map(([k,l,c])=>`<span><i class="${k==="invalid"?"dash":""}" style="background:${c};color:${c}"></i>${l}</span>`).join("")}</div>`;
+}
+function vCierres(){
+  const head=`<div class="viewhead"><div><h2>Cierres semanales</h2><p>Cada cierre guarda una foto del canvas y cuenta qué cambió respecto del cierre anterior: elementos nuevos, eliminados, validados, invalidados y editados en cada componente.</p></div></div>`;
+  if(T.closuresErr)return head+`<div class="banner warn">Esta función necesita actualizar la base de datos: en Supabase abre <b>SQL Editor</b>, pega de nuevo el archivo <b>schema.sql</b> y presiona <b>Run</b>.</div>`;
+  const wk=thisWeek();
+  const cur=T.closures.find(c=>c.week===wk);
+  const prev=T.closures.find(c=>c.week<wk);
+  const pv=computeClosure(T.hyps.map(h=>({id:h.id,block:h.block,text:h.text,status:h.status})),prev?prev.items:[]);
+  const past=T.closures;const sel=past.find(c=>c.id===T.closureSel)||past[0];
+  const asc=past.slice().reverse();
+  return head+`<div class="panel" style="margin-bottom:16px">
+    <div class="item-h"><h3 style="margin:0">Semana del ${fmtDay(wk)}</h3>${cur?`<span class="chip st-valid">Cerrada</span>`:`<span class="chip st-pending">Sin cerrar</span>`}</div>
+    <p class="muted" style="margin:6px 0 0;font-size:14px">${cur?`Cerrada ${cur.auto?"automáticamente":"por "+esc(nameOf(cur.closed_by))} ${ago(cur.updated_at||cur.created_at)}. Si hicieron cambios después, pueden volver a cerrarla y el registro se actualiza.`:`Esto es lo que quedará registrado al cerrar, comparado con ${prev?"el cierre de la semana del "+fmtDay(prev.week):"un canvas vacío (es el primer cierre, así que todo cuenta como nuevo)"}.`}</p>
+    ${miniStats(pv.totals)}
+    ${statsTable(pv)}
+    ${canEdit()?`<form data-form="closeweek" style="display:grid;gap:8px;margin-top:12px"><label class="label" for="cw-note">Comentario del cierre (opcional)</label><textarea id="cw-note" data-keep maxlength="1000" style="border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:8px 10px;min-height:60px;resize:vertical" placeholder="Ej.: Esta semana confirmamos que el precio no es el problema; el problema es el tiempo.">${cur?"":""}</textarea><div><button class="btn primary" type="submit">${cur?"Volver a cerrar con los cambios recientes":"Cerrar semana"}</button></div></form>`:""}
+  </div>
+  ${past.length>=2?`<div class="panel" style="margin-bottom:16px"><h3>Evolución del canvas</h3>${evoChart(asc)}</div>`:""}
+  ${past.length?`<h3 style="font-size:18px;margin:0 0 10px">Historial de cierres</h3><div class="snaps">${past.map(c=>`<button class="snap" data-act="closuresel" data-id="${esc(c.id)}" aria-pressed="${sel&&c.id===sel.id}"><b>Semana del ${fmtDay(c.week)}</b><span class="muted mono" style="font-size:12.5px">${(c.stats.totals||{}).changes||0} cambios · ${(c.stats.totals||{}).total||0} hipótesis · ${c.auto?"automático":esc(nameOf(c.closed_by))}</span></button>`).join("")}</div>
+    ${sel?`<div class="panel" style="margin-top:14px"><h3>Semana del ${fmtDay(sel.week)}</h3>
+      <p class="muted" style="margin:-4px 0 0;font-size:13.5px">${sel.auto?"Cierre automático":"Cerrada por "+esc(nameOf(sel.closed_by))} el ${fmtDay(sel.updated_at||sel.created_at)} · comparado con ${sel.stats.baseline_week?"la semana del "+fmtDay(sel.stats.baseline_week):"un canvas vacío"} · ${Number(sel.stats.interviews_week)||0} entrevistas en la semana · bitácora ${sel.stats.log_written?"escrita":"sin escribir"}</p>
+      ${sel.note?`<p style="margin:10px 0 0;white-space:pre-wrap">${esc(sel.note)}</p>`:""}
+      ${miniStats(sel.stats.totals||{})}${statsTable(sel.stats)}
+      ${T.isTeacher?`<div style="margin-top:12px;display:flex;justify-content:flex-end"><span><button class="btn sm ghost" data-act="closuredel" data-id="${esc(sel.id)}">Eliminar este cierre</button></span></div>`:""}</div>`:""}`
+  :`<div class="empty"><h3>Aún no hay cierres</h3><p>Al final de cada semana, cierren la semana para dejar registro de cómo cambió el canvas.</p></div>`}`;
+}
+
+
+/* ================= investigación (panel del curso) ================= */
+function researchPanel(){
+  const c=C.course;
+  if(!("rct_mode" in c))return C.course.join_code!==undefined?`<div class="banner warn">Para asignar herramientas (BMC o Value Lab) a los equipos, ejecuta de nuevo el archivo <b>schema.sql</b> en Supabase (ver la guía).</div>`:"";
+  const nb=C.teams.filter(t=>t.tool==="bmc").length,nv=C.teams.filter(t=>t.tool==="valuelab").length,nu=C.teams.filter(t=>!t.tool).length;
+  const lastR=(C.assign||[]).find(a=>a.method==="aleatoria");
+  const studentIds=new Set();Object.values(C.stats).forEach(s=>(s.sids||[]).forEach(id=>studentIds.add(id)));
+  const cons=C.consents||[];const yes=cons.filter(x=>x.consent).length,no=cons.filter(x=>!x.consent).length;
+  return `<details class="panel rpanel" ${(C.rOpen!=null?C.rOpen:(c.rct_mode||c.research_enabled||nv))?"open":""}><summary style="cursor:pointer;font-family:var(--f-display);font-weight:700;font-size:17px">Investigación: herramientas y datos</summary>
+    <div class="armcount"><span><b>${nb}</b>BMC</span><span><b>${nv}</b>Value Lab</span><span><b>${nu}</b>sin asignar</span></div>
+    <div class="row"><label class="check"><input type="checkbox" id="rctmode" ${c.rct_mode?"checked":""}> Modo RCT: los equipos nuevos quedan sin herramienta hasta que los asignes</label></div>
+    <div class="row"><span id="randwrap"><button class="btn sm primary" data-act="randomize" ${nu?"":"disabled"}>Asignar al azar ${nu?`los ${nu} equipos sin herramienta`:"(no hay equipos sin asignar)"}</button></span>
+      <span class="muted" style="font-size:13px">Balanceado: cada equipo va al grupo con menos equipos; los empates se deciden al azar. Cada cambio queda en el historial.</span></div>
+    ${lastR?`<p class="muted" style="margin:0;font-size:13.5px">Última asignación al azar: ${fmtDay(lastR.changed_at)} · ${(C.assign||[]).filter(a=>a.batch_id===lastR.batch_id).length} equipos.</p>`:""}
+    <hr style="border:0;border-top:1px solid var(--line);margin:4px 0">
+    <div class="row"><label class="check"><input type="checkbox" id="research" ${c.research_enabled?"checked":""}> Pedir consentimiento informado a los estudiantes</label>${c.research_enabled?`<span class="muted" style="font-size:13.5px">${yes} aceptan · ${no} no aceptan · ${Math.max(0,studentIds.size-yes-no)} sin responder</span>`:""}</div>
+    ${c.research_enabled?`<label class="label" for="consent-text">Texto del consentimiento (lo verán al entrar a su equipo)</label><textarea id="consent-text" data-keep maxlength="6000" placeholder="Ej.: Este curso es parte de un estudio sobre herramientas para desarrollar ideas de negocio, dirigido por… Tus respuestas se usarán de forma anónima… Participar es voluntario y no afecta tu nota…">${esc(c.consent_text||"")}</textarea><div><button class="btn sm" data-act="saveconsent">Guardar texto</button></div>`:""}
+    <hr style="border:0;border-top:1px solid var(--line);margin:4px 0">
+    <div class="row"><button class="btn sm" data-act="researchjson" ${C.teams.length?"":"disabled"}>Descargar datos de investigación (JSON)</button><label class="check"><input type="checkbox" id="incnames"> Incluir nombres de personas</label></div>
+    <span class="muted" style="font-size:13px">Por defecto las personas aparecen como P001, P002…; los nombres de equipos e ideas se mantienen. Incluye herramienta asignada, historial de asignación, todos los elementos, entrevistas, bitácoras, comentarios, cierres, consentimientos y el registro completo de cambios.</span>
+  </details>`;
+}
+async function exportResearch(btn){
+  const incNames=!!($("#incnames")&&$("#incnames").checked);
+  btn.disabled=true;const old=btn.textContent;btn.textContent="Preparando…";
+  try{
+    const cid=C.course.id,ids=C.teams.map(t=>t.id);
+    const q=(tbl,order)=>fetchAll(()=>sb.from(tbl).select("*").in("team_id",ids).order(order||"id"));
+    const res=await Promise.all([q("team_members","joined_at"),q("hypotheses"),q("interviews"),q("logs"),q("feedback"),q("snapshots"),q("weekly_closures"),
+      fetchAll(()=>sb.from("events").select("*").eq("course_id",cid).order("id")),
+      fetchAll(()=>sb.from("assignment_log").select("*").eq("course_id",cid).order("changed_at")),
+      fetchAll(()=>sb.from("research_consents").select("*").eq("course_id",cid).order("user_id"))]);
+    const err=res.find(r=>r.error);if(err){toast(errText(err.error));return}
+    const [mem,hy,iv,lg,fb,sn,cl,ev,al,co]=res.map(r=>r.data);
+    // seudónimos
+    const pid={};let k=0;const add=id=>{if(id&&!(id in pid))pid[id]=id===C.course.owner_id?"PROF":"P"+String(++k).padStart(3,"0")};
+    add(C.course.owner_id);mem.forEach(m=>add(m.user_id));co.forEach(x=>add(x.user_id));
+        [hy,iv,lg,fb,sn,cl,ev,al].forEach(arr=>arr.forEach(r=>["created_by","updated_by","closed_by","resolved_by","actor","changed_by","user_id"].forEach(f=>add(r[f]))));
+    if(incNames){const missing=Object.keys(pid).filter(id=>!(id in names));await loadNames(missing)}
+    const walk=v=>Array.isArray(v)?v.map(walk):v&&typeof v==="object"?Object.fromEntries(Object.entries(v).map(([kk,x])=>[kk,walk(x)])):(typeof v==="string"&&Object.prototype.hasOwnProperty.call(pid,v))?pid[v]:v;
+    const P=x=>walk(x);
+    const consentOf=Object.fromEntries(co.map(x=>[x.user_id,x.consent]));
+    const tcode={};C.teams.forEach((t,i)=>tcode[t.id]="E"+String(i+1).padStart(2,"0"));
+    const lastAssign={};al.forEach(a=>lastAssign[a.team_id]=a);
+    const data={
+      meta:{plataforma:"Bitácora Lean",version_datos:3,curso:C.course.name,exportado:now(),seudonimizado:!incNames,
+        nota:"Las personas aparecen como P001… (PROF = profesor/a). Los campos de texto libre (notas de entrevistas, comentarios) pueden contener nombres; revísalos antes de compartir.",
+        herramientas:TOOLS,
+        componentes:ALLB.map(b=>({codigo:b.k,nombre:b.n,herramienta:b.k.startsWith("vl_")?"valuelab":"bmc",columna_value_lab:b.col?{b:"Creencias",p:"Problemas",a:"Acciones"}[b.col]:null,vinculado_a:b.parent||null,
+          estados:b.nostatus?null:stOf(b.k)})),
+        estados_evidencia:{apoya:"La entrevista apoya el elemento",refuta:"La entrevista refuta el elemento"},
+        claves_cierre:Object.fromEntries(SK.concat([["reopened","Vueltas a 'por validar'"],["status_changed","Cambios de estado (elementos existentes)"]]).map(([a,b])=>[a,b]))},
+      personas:Object.entries(pid).map(([id,code])=>({id:code,...(incNames?{nombre:realName(id)}:{}),rol_curso:id===C.course.owner_id?"profesor/a":undefined,consentimiento:id in consentOf?consentOf[id]:null})),
+      equipos:C.teams.map(t=>({id:t.id,codigo:tcode[t.id],nombre:t.name,descripcion:t.description,herramienta:t.tool||null,meta_semanal:t.goal,creado:t.created_at,creado_por:t.created_by?(pid[t.created_by]||null):null,
+        asignacion:lastAssign[t.id]?{metodo:lastAssign[t.id].method,fecha:lastAssign[t.id].changed_at,lote:lastAssign[t.id].batch_id}:null,
+        integrantes:mem.filter(m=>m.team_id===t.id).map(m=>({persona:pid[m.user_id],rol:m.role,desde:m.joined_at,consentimiento:m.user_id in consentOf?consentOf[m.user_id]:null}))})),
+      historial_asignacion:P(al.map(a=>({...a,team_name:undefined}))),
+      elementos:P(hy),entrevistas:P(iv),bitacora:P(lg),comentarios:P(fb),versiones:P(sn),cierres:P(cl),consentimientos:P(co),eventos:P(ev)};
+    download(slug(C.course.name)+"-datos-investigacion-"+today()+".json",JSON.stringify(data,null,1),"application/json");
+    toast(`Listo: ${C.teams.length} equipos, ${ev.length} eventos`);
+  }finally{btn.disabled=false;btn.textContent=old}
+}
+function checkConsent(){
+  const c=T.course;if(!c||!c.research_enabled||T.role!=="estudiante")return;
+  sb.from("research_consents").select("consent").eq("course_id",c.id).eq("user_id",A.uid).maybeSingle().then(({data,error})=>{
+    T.consent=data?data.consent:null;if(!error&&!data)consentModal();else render()});
+}
+function consentModal(){
+  const c=T.course;
+  const md=openModal(`<h2>Participación en una investigación</h2>
+    <div style="white-space:pre-wrap;max-height:50vh;overflow-y:auto;border:1px solid var(--line);border-radius:8px;padding:12px;background:var(--bg)">${esc(c.consent_text||"Tu profesor/a está realizando un estudio con los datos de esta plataforma.")}</div>
+    <p class="muted" style="margin:0;font-size:13.5px">Puedes usar la plataforma igual, aceptes o no. Puedes cambiar tu respuesta después en la pestaña Equipo.</p>
+    <div class="acts"><button class="btn" data-no>No acepto</button><button class="btn primary" data-yes>Acepto participar</button></div>`);
+  const ans=async v=>{md.querySelectorAll("button").forEach(b=>b.disabled=true);
+    const ok=await run(sb.from("research_consents").upsert({course_id:c.id,user_id:A.uid,consent:v,answered_at:now()}),v?"Gracias por participar":"Respuesta guardada");
+    if(ok){T.consent=v;closeModal();render()}else md.querySelectorAll("button").forEach(b=>b.disabled=false)};
+  md.querySelector("[data-yes]").onclick=()=>ans(true);md.querySelector("[data-no]").onclick=()=>ans(false);
 }
 
 /* ================= modal ================= */
@@ -808,24 +1062,40 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape"&&$("#modalroot").inn
 function exportTeam(){
   const t=T.team;
   const data={equipo:{nombre:t.name,descripcion:t.description,metaSemanal:t.goal,curso:T.course?.name},exportado:now(),
-    integrantes:T.members.map(m=>({nombre:nameOf(m.user_id),rol:m.role})),
-    canvas:BLOCKS.map(b=>({bloque:b.n,hipotesis:hypsOf(b.k).map(h=>({texto:h.text,estado:ST[h.status]}))})),
+    integrantes:T.members.map(m=>({nombre:realName(m.user_id),rol:m.role})),
+    herramienta:TOOLS[T.team.tool]||"Sin asignar",
+    canvas:toolBlocks().map(b=>({bloque:b.n,elementos:hypsOf(b.k).map(h=>({texto:h.text,estado:b.nostatus?null:stOf(b.k)[h.status],vinculadoA:h.parent_id?((T.hyps.find(x=>x.id===h.parent_id)||{}).text||null):null}))})),
     entrevistas:T.interviews.map(i=>({persona:i.person,cargo:i.person_role,segmento:i.segment,fecha:i.interview_date,modalidad:i.channel,notas:i.notes,aprendizaje:i.insights,
       evidencia:Object.entries(i.evidence||{}).map(([h,v])=>({hipotesis:(T.hyps.find(x=>x.id===h)||{}).text||"(eliminada)",resultado:v}))})),
     bitacora:T.logs.map(l=>({semana:l.week,titulo:l.title,aprendimos:l.learned,cambiamos:l.changed,proximosPasos:l.next_steps,pivote:l.pivot})),
-    retroalimentacion:T.feedback.map(f=>({autor:nameOf(f.created_by),sobre:f.block==="general"?"General":BN[f.block],texto:f.text,fecha:f.created_at,resuelto:f.resolved})),
-    versiones:T.snaps.map(s=>({nombre:s.label,fecha:s.created_at,hipotesis:(s.items||[]).length}))};
+    retroalimentacion:T.feedback.map(f=>({autor:realName(f.created_by),sobre:f.block==="general"?"General":BN[f.block],texto:f.text,fecha:f.created_at,resuelto:f.resolved})),
+    versiones:T.snaps.map(s=>({nombre:s.label,fecha:s.created_at,hipotesis:(s.items||[]).length})),
+    cierres:T.closures.map(c=>({semana:c.week,automatico:c.auto,comentario:c.note,totales:c.stats.totals,porComponente:Object.fromEntries(toolBlocks().map(b=>[b.n,(c.stats.blocks||{})[b.k]||{}]))}))};
   download(slug(t.name)+"-bitacora.json",JSON.stringify(data,null,2),"application/json");
 }
+function exportClosures(){
+  const tn=Object.fromEntries(C.teams.map(t=>[t.id,t.name]));
+  const tt=Object.fromEntries(C.teams.map(t=>[t.id,t.tool]));const tl=id=>TOOLSHORT[tt[id]]||"Sin asignar";
+  const head=["Equipo","Herramienta","Semana (lunes)","Componente",...SK.map(([,l])=>l),"Entrevistas en la semana","Bitácora escrita","Cerrado por","Comentario"];
+  const rows=[];
+  C.closures.slice().sort((a,b)=>(tn[a.team_id]||"").localeCompare(tn[b.team_id]||"")||String(a.week).localeCompare(String(b.week))).forEach(c=>{
+    const who=c.auto?"Automático":realName(c.closed_by);
+    blocksFor(tt[c.team_id]).forEach(b=>{const s=(c.stats.blocks||{})[b.k]||{};rows.push([tn[c.team_id],tl(c.team_id),c.week,b.n,...SK.map(([k])=>Number(s[k])||0),"","","",""])});
+    const t=c.stats.totals||{};rows.push([tn[c.team_id],tl(c.team_id),c.week,"TOTAL",...SK.map(([k])=>Number(t[k])||0),Number(c.stats.interviews_week)||0,c.stats.log_written?"Sí":"No",who,c.note||""]);
+  });
+  const csv="\ufeff"+[head,...rows].map(r=>r.map(csvCell).join(";")).join("\n");
+  download(slug(C.course.name)+"-cierres-"+today()+".csv",csv,"text/csv;charset=utf-8");
+}
 function exportCourse(){
-  const head=["Equipo","Estudiantes","Mentores","Entrevistas semana","Entrevistas total","Meta semanal","Hipótesis validadas","Hipótesis invalidadas","Hipótesis total","Última bitácora","Pivotes","Comentarios abiertos","Integrantes","Código estudiantes","Código mentores"];
-  const rows=C.teams.map(t=>{const s=C.stats[t.id];return [t.name,s.est,s.men,s.ivw,s.iv,t.goal,s.hv,s.hi,s.ht,s.lastLog||"",s.piv,s.fb,s.ids.map(nameOf).join(" / "),t.student_code,t.mentor_code]});
+  const head=["Equipo","Herramienta","Estudiantes","Mentores","Entrevistas semana","Entrevistas total","Meta semanal","Hipótesis validadas","Hipótesis invalidadas","Hipótesis total","Última bitácora","Pivotes","Comentarios abiertos","Integrantes","Código estudiantes","Código mentores"];
+  const rows=C.teams.map(t=>{const s=C.stats[t.id];return [t.name,TOOLSHORT[t.tool]||"Sin asignar",s.est,s.men,s.ivw,s.iv,t.goal,s.hv,s.hi,s.ht,s.lastLog||"",s.piv,s.fb,s.ids.map(realName).join(" / "),t.student_code,t.mentor_code]});
   const csv="﻿"+[head,...rows].map(r=>r.map(csvCell).join(";")).join("\n");
   download(slug(C.course.name)+"-resumen-"+today()+".csv",csv,"text/csv;charset=utf-8");
 }
 
 /* ================= eventos ================= */
 document.addEventListener("click",async e=>{
+  if(e.target.closest(".toolsel"))return;
   const t=e.target.closest("[data-act]");if(!t||t.closest("#modalroot"))return;
   const a=t.dataset.act,id=t.dataset.id;
   switch(a){
@@ -833,6 +1103,21 @@ document.addEventListener("click",async e=>{
     case "authmode":A.authMode=t.dataset.mode;A.authMsg=null;render();break;
     case "tab":go(`#/equipo/${T.id}/${t.dataset.tab}`);window.scrollTo({top:0});break;
     case "openteam":go("#/equipo/"+id);break;
+    case "jointeam":{t.disabled=true;const tid=await run(sb.rpc("join_course_team",{code:J.code,tid:id}),"Te uniste al equipo");if(tid){J.preview=null;go("#/equipo/"+tid)}else t.disabled=false;break}
+    case "copycode":{const code=t.dataset.code;try{await navigator.clipboard.writeText(code);toast("Código copiado: "+code)}catch(err){toast("Copia este código: "+code)}break}
+    case "regencourse":inlineConfirm(t,"El código actual dejará de funcionar. ¿Continuar?","regencourse2");break;
+    case "regencourse2":{t.disabled=true;if(await run(sb.rpc("regenerate_course_code",{cid:C.course.id}),"Código del curso cambiado")){const {data}=await sb.from("courses").select("*").eq("id",C.course.id).maybeSingle();if(data)C.course=data;render()}break}
+    case "closeall":inlineConfirm(t,`Se guardará el cierre de esta semana para los ${C.teams.length} equipos con su canvas actual. ¿Continuar?`,"closeall2");break;
+    case "closeall2":{t.disabled=true;const n=await run(sb.rpc("close_course_week",{cid:C.course.id}));if(n!==null){toast(`Semana cerrada para ${n} equipos`);loadCourseData()}break}
+    case "exportclosures":exportClosures();break;
+    case "randomize":inlineConfirm(t,`Se asignará al azar una herramienta a ${C.teams.filter(x=>!x.tool).length} equipos. Queda registrado y no se puede deshacer automáticamente. ¿Continuar?`,"randomize2");break;
+    case "randomize2":{t.disabled=true;const r=await run(sb.rpc("randomize_course_tools",{cid:C.course.id}));if(r){toast(`Asignados ${r.assigned} equipos · BMC ${r.bmc} · Value Lab ${r.valuelab}`);loadCourseData()}break}
+    case "saveconsent":{const txt=($("#consent-text")||{}).value||"";t.disabled=true;if(await run(sb.from("courses").update({consent_text:txt}).eq("id",C.course.id),"Texto guardado"))C.course.consent_text=txt;t.disabled=false;break}
+    case "researchjson":exportResearch(t);break;
+    case "consent":consentModal();break;
+    case "closuresel":T.closureSel=id;render();break;
+    case "closuredel":inlineConfirm(t,"¿Eliminar este cierre? No se puede deshacer.","closuredel2",id);break;
+    case "closuredel2":t.disabled=true;if(await run(sb.from("weekly_closures").delete().eq("id",id),"Cierre eliminado")){T.closureSel=null;refetch("closures")}break;
     case "hyp":hypModal(id);break;
     case "newiv":case "iv":ivModal(id);break;
     case "newlog":case "log":logModal(id);break;
@@ -850,7 +1135,7 @@ document.addEventListener("click",async e=>{
     case "leave":inlineConfirm(t,"¿Seguro que quieres salir? Perderás acceso al trabajo del equipo.","leave2");break;
     case "leave2":t.disabled=true;if(await run(sb.from("team_members").delete().eq("team_id",T.id).eq("user_id",A.uid),"Saliste del equipo")){leaveTeam();go("#/")}break;
     case "regen":inlineConfirm(t,"Los códigos actuales dejarán de funcionar. ¿Continuar?","regen2");break;
-    case "regen2":t.disabled=true;if(await run(sb.rpc("regenerate_codes",{tid:T.id}),"Códigos nuevos generados")){const {data}=await sb.from("teams").select("*,course:courses(id,name,owner_id)").eq("id",T.id).maybeSingle();if(data)T.team=data;render()}break;
+    case "regen2":t.disabled=true;if(await run(sb.rpc("regenerate_codes",{tid:T.id}),"Códigos nuevos generados")){const {data}=await sb.from("teams").select("*,course:courses(*)").eq("id",T.id).maybeSingle();if(data)T.team=data;render()}break;
     case "delteam":inlineConfirm(t,"Se borrará el equipo y TODO su trabajo. ¿Eliminar?","delteam2");break;
     case "delteam2":{t.disabled=true;const cid=T.course.id;if(await run(sb.from("teams").delete().eq("id",T.id),"Equipo eliminado")){leaveTeam();go("#/curso/"+cid)}break}
     case "delcourse":inlineConfirm(t,"Se borrarán el curso, sus equipos y todo su trabajo. ¿Eliminar?","delcourse2");break;
@@ -862,6 +1147,19 @@ document.addEventListener("click",async e=>{
   }
 });
 document.addEventListener("input",e=>{if(e.target.id==="ivq"){T.q=e.target.value;render()}});
+document.addEventListener("toggle",e=>{if(e.target.classList&&e.target.classList.contains("rpanel"))C.rOpen=e.target.open},true);
+document.addEventListener("change",async e=>{
+  if(e.target.classList.contains("toolsel")){const sel=e.target,tid=sel.dataset.team,team=C.teams.find(x=>x.id===tid);if(!team)return;const v=sel.value||null;
+    const apply=async()=>{sel.disabled=true;if(await run(sb.from("teams").update({tool:v}).eq("id",tid),`${team.name}: ${v?TOOLS[v]:"sin herramienta"}`)){team.tool=v;loadCourseData()}else{sel.value=team.tool||""}sel.disabled=false};
+    if(team.tool&&team.tool!==v){sel.value=team.tool;const md=openModal(`<h2>¿Cambiar la herramienta?</h2><p style="margin:0"><b>${esc(team.name)}</b> usa <b>${TOOLS[team.tool]}</b>. Si la cambias a <b>${v?TOOLS[v]:"sin asignar"}</b>, el equipo dejará de ver su trabajo actual (no se borra) y el cambio quedará en el historial de asignación.</p><div class="acts"><button class="btn" data-close>Cancelar</button><button class="btn primary" data-save>Cambiar</button></div>`);
+      md.querySelector("[data-save]").onclick=()=>{closeModal();sel.value=v||"";apply()};return}
+    apply();return}
+  if(e.target.id==="rctmode"||e.target.id==="research"){const f=e.target.id==="rctmode"?"rct_mode":"research_enabled",v=e.target.checked;e.target.disabled=true;
+    if(await run(sb.from("courses").update({[f]:v}).eq("id",C.course.id),f==="rct_mode"?(v?"Modo RCT activado":"Modo RCT desactivado"):(v?"Se pedirá consentimiento":"Ya no se pedirá consentimiento"))){C.course[f]=v;render()}else e.target.checked=!v;e.target.disabled=false;return}
+  if(e.target.id==="allowcreate"){const v=e.target.checked;e.target.disabled=true;
+    if(await run(sb.from("courses").update({allow_team_creation:v}).eq("id",C.course.id),v?"Los estudiantes pueden crear equipos":"Solo tú puedes crear equipos"))C.course.allow_team_creation=v;
+    else e.target.checked=!v;e.target.disabled=false}
+});
 document.addEventListener("submit",async e=>{
   const f=e.target.closest("form[data-form]");if(!f)return;e.preventDefault();
   const kind=f.dataset.form,btn=f.querySelector("[type=submit]");const val=s=>(f.querySelector(s)?.value||"").trim();
@@ -877,8 +1175,19 @@ document.addEventListener("submit",async e=>{
     A.authMsg=error?{text:errText(error)}:{ok:true,text:"Si el correo está registrado, te llegará un enlace en unos minutos. Revisa también la carpeta de spam."};render()}
   else if(kind==="newpass"){busy(true);const {error}=await sb.auth.updateUser({password:f.querySelector("#np-pass").value});busy(false);
     if(error){A.authMsg={text:errText(error)};render()}else{A.recovering=false;A.authMsg=null;toast("Contraseña actualizada");history.replaceState(null,"",location.pathname+"#/");route()}}
-  else if(kind==="join"){const code=val("#join-code");if(!code)return;busy(true);const tid=await run(sb.rpc("join_team",{code}),"Te uniste al equipo");busy(false);
+  else if(kind==="join"){const code=val("#join-code");if(!code)return;busy(true);
+    const pv=await sb.rpc("course_preview",{code}).then(r=>r,err=>({error:err}));
+    if(!pv.error&&pv.data){busy(false);const el=document.getElementById("join-code");if(el)el.value="";
+      if(pv.data.is_owner){go("#/curso/"+pv.data.id);return}
+      J.code=code.trim().toUpperCase();J.preview=pv.data;go("#/unirse");return}
+    const tid=await run(sb.rpc("join_team",{code}),"Te uniste al equipo");busy(false);
     if(tid){const el=document.getElementById("join-code");if(el)el.value="";go("#/equipo/"+tid)}}
+  else if(kind==="createteam"){const name=val("#ct-name");if(!name){toast("Escribe el nombre del equipo.");return}busy(true);
+    const tid=await run(sb.rpc("create_course_team",{code:J.code,p_name:name}),"Equipo creado. Comparte el código del curso con tus compañeros para que se unan.");busy(false);
+    if(tid){J.preview=null;go("#/equipo/"+tid)}}
+  else if(kind==="closeweek"){busy(true);const note=val("#cw-note");
+    const ok=await run(sb.rpc("close_week",{tid:T.id,p_note:note}),"Semana cerrada");busy(false);
+    if(ok){const el=document.getElementById("cw-note");if(el)el.value="";T.closureSel=null;await refetch("closures",true);const el2=document.getElementById("cw-note");if(el2)el2.value="";render()}}
   else if(kind==="newcourse"){const name=val("#course-name");if(!name){toast("Escribe el nombre del curso.");return}busy(true);
     const d=await run(sb.from("courses").insert({name,owner_id:A.uid}).select("id").single(),"Curso creado");busy(false);
     if(d){const el=document.getElementById("course-name");if(el)el.value="";go("#/curso/"+d.id)}}
@@ -895,7 +1204,7 @@ document.addEventListener("submit",async e=>{
     if(d){T.snapSel=d.id;const el=document.getElementById("snap-label");if(el)el.value="";await refetch("snaps");const el2=document.getElementById("snap-label");if(el2)el2.value=""}}
   else if(kind==="teaminfo"){busy(true);const goal=parseInt(val("#ti-goal"))||10;
     if(await run(sb.rpc("update_team_info",{tid:T.id,p_name:val("#ti-name"),p_description:val("#ti-desc"),p_goal:goal}),"Datos del equipo guardados")){
-      const {data}=await sb.from("teams").select("*,course:courses(id,name,owner_id)").eq("id",T.id).maybeSingle();if(data)T.team=data;
+      const {data}=await sb.from("teams").select("*,course:courses(*)").eq("id",T.id).maybeSingle();if(data)T.team=data;
       ["ti-name","ti-desc","ti-goal"].forEach(i=>{const el=document.getElementById(i);if(el)el.removeAttribute("data-keep")});render()}
     busy(false)}
 });
