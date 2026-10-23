@@ -5,8 +5,10 @@ Plataforma web para seguir ideas de negocio en clases de emprendimiento, inspira
 ## Qué hace
 
 - **Cuentas con correo y contraseña** para cada estudiante, mentor y profesor/a.
-- **Cursos y equipos**: el profesor/a crea un curso y sus equipos. Cada equipo tiene un código para estudiantes y otro para mentores.
-- **Business Model Canvas** con hipótesis por bloque y su estado: por validar, validada o invalidada.
+- **Cursos y equipos**: el profesor/a crea el curso y comparte su código. Cada estudiante elige su equipo o crea uno nuevo (un equipo por curso). Cada equipo tiene además un código para mentores.
+- **Cierres semanales** del canvas: cuántos elementos tiene cada componente y cuántos se agregaron, eliminaron, validaron, invalidaron o editaron en la semana. Pueden ser manuales o automáticos (domingo 23:59).
+- **Dos herramientas para representar la idea**: Business Model Canvas o Value Lab (Felin, Gambardella y Zenger, 2021: creencias, problemas y acciones). El profesor/a asigna cada equipo a una, a mano o al azar de forma balanceada, con historial de asignación para RCT.
+- **Datos para investigación**: registro de cada cambio (quién, cuándo, antes y después), consentimiento informado opcional y exportación seudonimizada en JSON.
 - **Entrevistas con clientes** vinculadas a las hipótesis que apoyan o refutan.
 - **Bitácora semanal** con aprendizajes, cambios, próximos pasos y pivotes.
 - **Retroalimentación** de mentores y profesor/a por bloque del canvas.
@@ -27,7 +29,8 @@ Estas reglas se aplican en la base de datos, así que un equipo no puede ver el 
 
 - `index.html`: la página completa.
 - `config.js`: **el único archivo que hay que editar**, con la URL y la publishable key de Supabase.
-- `supabase/schema.sql`: crea las tablas y reglas de acceso. Se pega una vez en el SQL Editor de Supabase.
+- `supabase/schema.sql`: crea o actualiza las tablas y reglas de acceso. Se pega en el SQL Editor de Supabase; se puede ejecutar de nuevo sin perder datos.
+- `supabase/cierre-automatico.sql` (opcional): programa el cierre automático de todos los equipos cada domingo.
 
 ## Puesta en marcha (resumen)
 
