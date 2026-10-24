@@ -438,16 +438,16 @@ declare
   cur jsonb; prev jsonb; prev_week date;
   bstats jsonb; tot jsonb; ivw int; ivt int; has_log boolean; st jsonb; rid uuid;
 begin
-  select coalesce(jsonb_agg(jsonb_build_object('id', id, 'block', block, 'text', text, 'status', status)
+  select coalesce(jsonb_agg(jsonb_build_object('id', id, 'block', block, 'text', text, 'then_text', coalesce(then_text, ''), 'status', status)
                             order by created_at), '[]'::jsonb)
     into cur from hypotheses where team_id = tid;
   select items, week into prev, prev_week from weekly_closures
    where team_id = tid and week < wk order by week desc limit 1;
   prev := coalesce(prev, '[]'::jsonb);
 
-  with c as (select e->>'id' id, e->>'block' block, e->>'text' txt, e->>'status' status from jsonb_array_elements(cur) e),
-       p as (select e->>'id' id, e->>'block' block, e->>'text' txt, e->>'status' status from jsonb_array_elements(prev) e),
-       j as (select c.block cb, p.block pb, c.status cs, p.status ps, c.txt ct, p.txt pt
+  with c as (select e->>'id' id, e->>'block' block, e->>'text' txt, coalesce(e->>'then_text', '') tt, e->>'status' status from jsonb_array_elements(cur) e),
+       p as (select e->>'id' id, e->>'block' block, e->>'text' txt, coalesce(e->>'then_text', '') tt, e->>'status' status from jsonb_array_elements(prev) e),
+       j as (select c.block cb, p.block pb, c.status cs, p.status ps, c.txt ct, p.txt pt, c.tt ctt, p.tt ptt
                from c full join p on c.id = p.id),
        bl as (select unnest(array['kp','ka','kr','vp','cr','ch','cs','cost','rev','vl_orth','vl_belief','vl_problem','vl_sub','vl_ifthen','vl_exp','vl_res','vl_sol']) b),
        per as (
@@ -459,7 +459,7 @@ begin
            count(*) filter (where cb = bl.b and pb is null)                          as added,
            count(*) filter (where pb = bl.b and cb is null)                          as removed,
            count(*) filter (where cb = bl.b and pb is not null and pb <> cb)         as moved_in,
-           count(*) filter (where cb = bl.b and pb is not null and ct <> pt)         as edited,
+           count(*) filter (where cb = bl.b and pb is not null and (ct <> pt or ctt <> ptt)) as edited,
            count(*) filter (where cb = bl.b and cs = 'valid' and coalesce(ps,'') <> 'valid')     as validated,
            count(*) filter (where cb = bl.b and cs = 'invalid' and coalesce(ps,'') <> 'invalid') as invalidated,
            count(*) filter (where cb = bl.b and pb is not null and cs = 'pending' and ps <> 'pending') as reopened,
@@ -716,6 +716,108 @@ create policy consents_update on public.research_consents for update to authenti
 
 revoke execute on function public.randomize_course_tools(uuid) from anon;
 
+-- =====================================================================
+--  VERSIÓN 4 · Cuentas de profesor activadas por el administrador
+--             y lógica causal del Value Lab con SI / ENTONCES
+-- =====================================================================
+-- Segunda parte del enunciado causal (ENTONCES)
+alter table public.hypotheses add column if not exists then_text text not null default '';
+
+-- Administradores de la plataforma (se agregan con el archivo hacerme-admin.sql)
+create table if not exists public.app_admins (
+  user_id   uuid primary key references auth.users(id) on delete cascade,
+  added_at  timestamptz not null default now()
+);
+
+-- Acceso de profesor: solicitudes y activaciones
+create table if not exists public.teacher_access (
+  user_id       uuid primary key references public.profiles(id) on delete cascade,
+  status        text not null default 'pending' check (status in ('pending', 'active', 'revoked')),
+  request_note  text not null default '',
+  requested_at  timestamptz not null default now(),
+  granted_by    uuid references auth.users(id) on delete set null,
+  granted_at    timestamptz,
+  expires_at    date,
+  admin_note    text not null default ''
+);
+
+create or replace function public.is_app_admin()
+returns boolean language sql stable security definer set search_path = public as $$
+  select exists (select 1 from app_admins where user_id = auth.uid())
+$$;
+
+create or replace function public.can_create_courses()
+returns boolean language sql stable security definer set search_path = public as $$
+  select public.is_app_admin() or exists (
+    select 1 from teacher_access
+    where user_id = auth.uid() and status = 'active'
+      and (expires_at is null or expires_at >= (now() at time zone 'America/Santiago')::date))
+$$;
+
+-- Quienes ya tenían cursos quedan como profesores activos (solo la primera vez)
+insert into public.teacher_access (user_id, status, granted_at, admin_note)
+select distinct c.owner_id, 'active', now(), 'Acceso inicial: ya tenía cursos'
+from public.courses c join public.profiles p on p.id = c.owner_id
+on conflict (user_id) do nothing;
+
+-- Solicitar acceso de profesor (o volver a solicitarlo)
+create or replace function public.request_teacher_access(p_note text default '')
+returns text language plpgsql security definer set search_path = public as $$
+declare cur text;
+begin
+  if auth.uid() is null then raise exception 'Debes iniciar sesión'; end if;
+  select status into cur from teacher_access where user_id = auth.uid();
+  if cur = 'active' and public.can_create_courses() then return 'active'; end if;
+  insert into teacher_access (user_id, status, request_note, requested_at)
+  values (auth.uid(), 'pending', left(coalesce(p_note, ''), 1000), now())
+  on conflict (user_id) do update
+    set status = 'pending', request_note = excluded.request_note, requested_at = now();
+  return 'pending';
+end $$;
+
+-- El administrador activa, renueva o desactiva a un profesor
+create or replace function public.admin_set_teacher(uid uuid, p_status text, p_expires date default null, p_note text default null)
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  if not public.is_app_admin() then raise exception 'Solo el administrador puede hacer esto'; end if;
+  if p_status not in ('active', 'revoked', 'pending') then raise exception 'Estado no válido'; end if;
+  insert into teacher_access (user_id, status, granted_by, granted_at, expires_at, admin_note)
+  values (uid, p_status, auth.uid(), case when p_status = 'active' then now() end, p_expires, coalesce(p_note, ''))
+  on conflict (user_id) do update
+    set status = excluded.status,
+        granted_by = auth.uid(),
+        granted_at = case when excluded.status = 'active' then now() else teacher_access.granted_at end,
+        expires_at = excluded.expires_at,
+        admin_note = coalesce(p_note, teacher_access.admin_note);
+end $$;
+
+alter table public.app_admins enable row level security;
+drop policy if exists admins_select on public.app_admins;
+create policy admins_select on public.app_admins for select to authenticated
+  using (user_id = auth.uid() or public.is_app_admin());
+
+alter table public.teacher_access enable row level security;
+drop policy if exists teacher_access_select on public.teacher_access;
+create policy teacher_access_select on public.teacher_access for select to authenticated
+  using (user_id = auth.uid() or public.is_app_admin());
+-- (no hay escritura directa: solo mediante las funciones de arriba)
+
+-- Solo profesores activos crean cursos
+drop policy if exists courses_insert on public.courses;
+create policy courses_insert on public.courses for insert to authenticated
+  with check (owner_id = auth.uid() and public.can_create_courses());
+
+-- El administrador puede ver perfiles y cursos (para gestionar cuentas)
+drop policy if exists profiles_select on public.profiles;
+create policy profiles_select on public.profiles for select to authenticated
+  using (public.can_see_profile(id) or public.is_app_admin());
+drop policy if exists courses_select on public.courses;
+create policy courses_select on public.courses for select to authenticated
+  using (owner_id = auth.uid() or public.in_course(id) or public.is_app_admin());
+
+revoke execute on function public.request_teacher_access(text) from anon;
+revoke execute on function public.admin_set_teacher(uuid, text, date, text) from anon;
+
 -- Nadie sin sesión puede leer ni escribir
 revoke all on all tables in schema public from anon;
 revoke execute on function public.join_team(text) from anon;
@@ -742,5 +844,5 @@ begin
   end if;
 end $$;
 
--- Versión 3 (herramienta por equipo: BMC o Value Lab; datos de investigación).
+-- Versión 4 (cuentas de profesor activadas por el administrador; Value Lab con SI / ENTONCES).
 -- Listo. Si ves "Success. No rows returned", la base de datos quedó configurada.
