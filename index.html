@@ -125,6 +125,45 @@ table.stats td:first-child{white-space:nowrap}
 .mini b{display:block;font-family:var(--f-display);font-size:24px;font-variant-numeric:tabular-nums;line-height:1.2}
 .mini span{font-size:12.5px;color:var(--muted)}
 .chartlegend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;color:var(--muted);margin-top:6px}
+.vlhdr{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;font-family:var(--f-display);font-weight:700;letter-spacing:.01em;margin-bottom:4px}
+.vlhdr .b{font-size:26px;color:var(--accent)}
+.vlhdr .s{font-size:26px;color:var(--line)}
+.vlhdr .t{font-size:20px;color:var(--muted)}
+.vlintro{margin:0 0 16px;color:var(--muted);max-width:75ch}
+.vlg{display:grid;grid-template-columns:minmax(0,1fr) 34px minmax(0,1.15fr) 34px minmax(0,1fr);grid-template-areas:"st st st . sa" "b g1 p . a";align-items:start}
+.vlsec{font-family:var(--f-display);font-weight:700;font-size:20px;letter-spacing:.02em;margin:0 0 8px}
+.vlsec.t{grid-area:st}.vlsec.a{grid-area:sa}
+.vlbox{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px;min-width:0;display:flex;flex-direction:column;gap:6px;position:relative}
+.vlbox h3{font-size:17px;font-weight:600}
+.vlbox .q{font-size:13px;color:var(--muted);margin:0 0 4px;line-height:1.45}
+.vlkind{font-size:16px;color:var(--muted);font-family:var(--f-display)}
+.vlnote{font-size:12px;font-style:italic;color:var(--muted);margin-top:-4px}
+.vlpart{display:flex;flex-direction:column;gap:6px;min-width:0}
+.vldown+.vlpart{padding-top:2px}
+.vlpart .cnt{margin-left:auto;font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.vlpart header{display:flex;align-items:baseline;gap:8px}
+.vlb{grid-area:b}.vlp{grid-area:p}.vla{grid-area:a;display:flex;flex-direction:column;gap:14px;position:relative}
+.vlgut{grid-area:g1;position:relative;align-self:stretch}
+.vlgut::before{content:"";position:absolute;left:0;right:8px;top:24px;height:2.5px;background:var(--accent)}
+.vlgut::after,.vla .vlbox::after{content:"";position:absolute;top:19px;border-left:9px solid var(--accent);border-top:6px solid transparent;border-bottom:6px solid transparent}
+.vlgut::after{right:0}
+.vla .vlbox::before{content:"";position:absolute;left:-34px;width:26px;top:24px;height:2.5px;background:var(--accent)}
+.vla .vlbox::after{left:-9px}
+.vla .vlbox:not(:last-child) .vlv{position:absolute;left:-34px;width:2.5px;top:24px;bottom:-38px;background:var(--accent)}
+.vldown{display:flex;justify-content:center;color:var(--accent);height:22px}
+.vldown svg{width:14px;height:22px}
+.vlmob{display:none;justify-content:center}
+.hyp.ift{display:grid;grid-template-columns:auto minmax(0,1fr);gap:3px 10px;align-items:baseline}
+.hyp.ift .il{font-size:11.5px;font-style:italic;font-weight:600;color:var(--muted);letter-spacing:.04em}
+.hyp.ift .meta,.hyp.ift .par{grid-column:1/-1}
+.ifq{display:grid;grid-template-columns:auto minmax(0,1fr);gap:2px 12px;font-size:13px;color:var(--muted);margin-bottom:4px}
+.ifq i{font-weight:600;font-size:12px;letter-spacing:.04em;color:var(--fg)}
+.addf.two{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px 8px;align-items:center}
+.addf.two .il{font-size:11.5px;font-style:italic;font-weight:600;color:var(--muted)}
+.addf.two button{grid-column:2;justify-self:end}
+.rangehint{font-size:12px;color:var(--muted)}
+.rangehint.ok{color:var(--ok)}
+@media (max-width:980px){.vlg{grid-template-columns:minmax(0,1fr);grid-template-areas:"st" "b" "m1" "p" "m2" "sa" "a"}.vlgut{display:none}.vla .vlbox::before,.vla .vlbox::after,.vla .vlv{display:none}.vlmob{display:flex}.vlmob.m1{grid-area:m1}.vlmob.m2{grid-area:m2}.vlsec.a{margin-top:4px}}
 .vl{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;align-items:start}
 .vlcol{display:flex;flex-direction:column;gap:8px;min-width:0}
 .vlhead{display:grid;gap:2px;padding:2px 2px 4px;border-bottom:2px solid var(--accent)}
@@ -298,14 +337,14 @@ const BLOCKS=[
  {k:"rev",n:"Fuentes de ingreso",q:"¿Por qué y cuánto pagarían?"}
 ];
 const VL_BLOCKS=[
- {k:"vl_orth",col:"b",n:"Ortodoxias",q:"¿Qué cree la mayoría sobre los clientes, la tecnología, los proveedores o el mercado?",ph:"Lo que todos dan por cierto…",nostatus:true},
- {k:"vl_belief",col:"b",n:"Creencias contrarias",q:"¿Qué creemos nosotros que otros no ven?",ph:"Nosotros creemos que…"},
- {k:"vl_problem",col:"p",n:"Problema central",q:"¿Qué obstáculo impide que nuestra creencia se haga realidad?",ph:"El problema central es…",parent:"vl_belief"},
- {k:"vl_sub",col:"p",n:"Subproblemas",q:"¿Qué debe ser cierto, o hacerse cierto, para resolver el problema?",ph:"Debe ser cierto que…",parent:"vl_problem"},
- {k:"vl_ifthen",col:"p",n:"Enunciado causal",q:"Si resolvemos estos subproblemas, entonces… porque…",ph:"Si…, entonces…, porque…",parent:"vl_belief"},
- {k:"vl_exp",col:"a",n:"Experimentos",q:"¿Qué prueba nos dirá si un supuesto es cierto?",ph:"Probaremos…",parent:"vl_sub",st:["Pendiente","Apoya la teoría","Refuta la teoría"]},
- {k:"vl_res",col:"a",n:"Recursos por adquirir",q:"¿Qué activos, socios o capacidades necesitamos y otros subvaloran?",ph:"Necesitamos conseguir…",parent:"vl_sub",st:["Por conseguir","Conseguido","Descartado"]},
- {k:"vl_sol",col:"a",n:"Búsqueda de soluciones",q:"¿Dónde y cómo buscaremos la solución de cada subproblema?",ph:"Buscaremos…",parent:"vl_sub",st:["Buscando","Encontrada","Descartada"]}];
+ {k:"vl_orth",col:"b",n:"Creencias comunes",short:"Comunes",q:"¿Cuáles son las ortodoxias y creencias profundamente arraigadas en la industria sobre la tecnología, los gustos de los consumidores, la producción, la distribución, la gobernanza, etc.?",ph:"En la industria se cree que…",nostatus:true},
+ {k:"vl_belief",col:"b",n:"Creencias contrarias o poco comunes",short:"Contrarias o poco comunes",q:"¿Qué crees tú que otros no creen? ¿Puedes imaginar creencias contrarias a las creencias comunes de la industria? ¿Cómo podrías pensar distinto sobre cómo organizarse, el futuro de la tecnología o la demanda de los consumidores?",ph:"Nosotros creemos que…",parent:["vl_orth"]},
+ {k:"vl_problem",col:"p",n:"Problema central",q:"¿Qué problema central impide que se haga realidad tu creencia poco común?",ph:"El problema central es…",parent:["vl_belief"]},
+ {k:"vl_sub",col:"p",n:"Subproblemas",q:"¿Qué tres a cinco subproblemas clave deben resolverse para resolver tu problema central?",ph:"Subproblema…",parent:["vl_problem"],range:[3,5]},
+ {k:"vl_ifthen",col:"p",n:"Lógica causal",note:"(expresada como enunciados si-entonces o hipótesis)",q:"Intenta capturar tu hipótesis central en un enunciado si-entonces de la siguiente forma: si resolvemos estos subproblemas, entonces resolvemos este problema central, lo que nos permite introducir el siguiente valor.",ph:"resolvemos estos subproblemas…",ph2:"resolvemos este problema central, lo que nos permite introducir el siguiente valor…",parent:["vl_problem"],ifthen:true},
+ {k:"vl_exp",col:"a",n:"Realizar experimentos",q:"¿Qué experimentos pondrían a prueba los principios centrales de la teoría? ¿Qué debemos demostrar que es cierto?",ph:"Experimento…",parent:["vl_ifthen","vl_sub"],st:["Pendiente","Apoya la teoría","Refuta la teoría"]},
+ {k:"vl_res",col:"a",n:"Adquirir recursos",q:"¿Qué activos, tecnologías y habilidades revela la teoría como actualmente subvalorados?",ph:"Recurso…",parent:["vl_ifthen","vl_sub"],st:["Por conseguir","Conseguido","Descartado"]},
+ {k:"vl_sol",col:"a",n:"Buscar soluciones",q:"¿Dónde podemos buscar soluciones a los subproblemas? ¿Quién ya ha resuelto problemas muy parecidos (quizás en otra industria)?",ph:"Buscaremos en…",parent:["vl_sub"],st:["Buscando","Encontrada","Descartada"]}];
 const ALLB=BLOCKS.concat(VL_BLOCKS);
 const BN=Object.fromEntries(ALLB.map(b=>[b.k,b.n]));
 const TOOLS={bmc:"Business Model Canvas",valuelab:"Value Lab"};
@@ -315,6 +354,8 @@ const toolBlocks=()=>blocksFor(T.team&&T.team.tool);
 const statusBlocks=()=>toolBlocks().filter(b=>!b.nostatus);
 const blockOf=k=>ALLB.find(x=>x.k===k)||{};
 const stOf=k=>{const b=blockOf(k);return b.st?{pending:b.st[0],valid:b.st[1],invalid:b.st[2]}:ST};
+const hText=h=>h.block==="vl_ifthen"?`Si ${h.text}${h.then_text?`, entonces ${h.then_text}`:""}`:h.text;
+const parentsOf=k=>{const p=blockOf(k).parent;return p?[].concat(p):[]};
 const itemWord=()=>T.team&&T.team.tool==="valuelab"?"elemento":"hipótesis";
 async function fetchAll(make){let out=[],from=0;for(;;){const {data,error}=await make().range(from,from+999);if(error)return{data:out,error};out=out.concat(data||[]);if(!data||data.length<1000)return{data:out,error:null};from+=1000}}
 const ST={pending:"Por validar",valid:"Validada",invalid:"Invalidada"};
@@ -329,7 +370,8 @@ if(CFG.appName){document.title=CFG.appName;document.getElementById("brand").text
 
 /* ================= estado ================= */
 const A={session:null,uid:null,name:"",recovering:false,authMode:"login",authMsg:null,autoOpened:false};
-const H={teams:[],courses:[],loaded:false};
+const H={teams:[],courses:[],loaded:false,canCreate:true,access:null,isAdmin:false,legacy:false};
+const ADM={rows:[],courseCount:{},loaded:false,found:null};
 const C={course:null,teams:[],stats:{},loaded:false};
 const T={id:null,team:null,course:null,role:null,isTeacher:false,members:[],hyps:[],interviews:[],logs:[],feedback:[],snaps:[],closures:[],closuresErr:false,closureSel:null,tab:"resumen",fbFilter:"open",snapSel:null,q:"",loaded:false};
 const J={code:null,preview:null};
@@ -407,13 +449,13 @@ function doRender(){
   const st=keepState();
   renderTop();
   const m=$("#main");
-  const fn={joincourse:vJoinCourse,setup:vSetup,auth:vAuth,recovery:vRecovery,home:vHome,course:vCourse,team:vTeam,loading:()=>`<div class="empty"><h3>Cargando…</h3></div>`,notfound:vNotFound}[view];
+  const fn={admin:vAdmin,joincourse:vJoinCourse,setup:vSetup,auth:vAuth,recovery:vRecovery,home:vHome,course:vCourse,team:vTeam,loading:()=>`<div class="empty"><h3>Cargando…</h3></div>`,notfound:vNotFound}[view];
   m.innerHTML=fn();
   restoreState(st);
 }
 function renderTop(){
   const logged=!!A.uid&&!["auth","setup","recovery"].includes(view);
-  $("#me").innerHTML=logged?`${av(A.uid)}<span class="nm">${esc(A.name||"")}</span><button class="btn sm ghost" data-act="logout">Salir</button>`:"";
+  $("#me").innerHTML=logged?`${A.isAdmin?`<a class="btn sm ghost" href="#/admin">Administración</a>`:""}${av(A.uid)}<span class="nm">${esc(A.name||"")}</span><button class="btn sm ghost" data-act="logout">Salir</button>`:"";
   let cr="";
   if(view==="course"&&C.course)cr=`<span class="sep">/</span><b>${esc(C.course.name)}</b>`;
   if(view==="team"&&T.team)cr=(T.isTeacher?`<span class="sep">/</span><a href="#/curso/${esc(T.course.id)}">${esc(T.course.name)}</a>`:(T.course?`<span class="sep">/</span><span class="muted">${esc(T.course.name)}</span>`:""))+`<span class="sep">/</span><b>${esc(T.team.name)}</b>`;
@@ -438,6 +480,7 @@ async function route(){
     if(T.id===p[1]&&view==="team"){T.tab=tab;render();return}
     T.tab=tab;await openTeam(p[1]);return}
   leaveTeam();
+  if(p[0]==="admin"){await openAdmin();return}
   if(p[0]==="unirse"&&J.preview){view="joincourse";render();return}
   if(p[0]==="curso"&&p[1]){await openCourse(p[1]);return}
   await openHome();
@@ -453,6 +496,7 @@ async function setSession(session){
     A.name=session.user.user_metadata?.full_name||"";
     const {data}=await sb.from("profiles").select("full_name").eq("id",uid).maybeSingle();
     if(data&&data.full_name)A.name=data.full_name;names[uid]=A.name;
+    const ad=await sb.rpc("is_app_admin");A.isAdmin=!ad.error&&!!ad.data;
   }
   return changed;
 }
@@ -512,10 +556,14 @@ function vNotFound(){return `<div class="empty"><h3>No encontramos esta página<
 /* ================= inicio ================= */
 async function openHome(){
   view="home";render();
-  const [mt,cs]=await Promise.all([
+  const [mt,cs,cc,ta]=await Promise.all([
     sb.from("team_members").select("role,team:teams(id,name,description,course:courses(id,name))").eq("user_id",A.uid),
-    sb.from("courses").select("id,name,created_at,teams(count)").eq("owner_id",A.uid).order("created_at")
+    sb.from("courses").select("id,name,created_at,teams(count)").eq("owner_id",A.uid).order("created_at"),
+    sb.rpc("can_create_courses"),
+    sb.from("teacher_access").select("*").eq("user_id",A.uid).maybeSingle()
   ]);
+  H.legacy=!!cc.error;H.canCreate=cc.error?true:!!cc.data;H.access=ta.error?null:ta.data;H.isAdmin=!!A.isAdmin;
+  if(H.isAdmin){const {data}=await sb.from("teacher_access").select("user_id").eq("status","pending");H.pending=(data||[]).length}
   if(mt.error||cs.error)toast(errText(mt.error||cs.error));
   H.teams=(mt.data||[]).filter(x=>x.team);H.courses=cs.data||[];H.loaded=true;
   if(!A.autoOpened&&H.teams.length===1&&!H.courses.length&&!location.hash.replace(/^#\/?/,"")){A.autoOpened=true;go("#/equipo/"+H.teams[0].team.id);return}
@@ -531,10 +579,60 @@ function vHome(){
     <form class="inline" data-form="join" style="margin-top:14px"><label class="label" for="join-code">Unirme con un código</label><input id="join-code" data-keep placeholder="Ej.: 7F3A9C" maxlength="12" autocomplete="off" style="text-transform:uppercase;max-width:200px"><button class="btn primary" type="submit">Continuar</button></form>
     <p class="muted" style="font-size:13px;margin:6px 0 0">Sirve el código del curso, el de un equipo o el de mentor.</p>
   </section>
-  <section class="section"><h2>Cursos que dicto</h2>
+  ${H.isAdmin?`<div class="banner"><span><b>Administración:</b> ${H.pending?`${H.pending} solicitud${H.pending>1?"es":""} de profesor pendiente${H.pending>1?"s":""}.`:"activa o desactiva cuentas de profesor."}</span><span class="spacer"></span><a class="btn sm primary" href="#/admin">Abrir administración</a></div>`:""}
+  ${!H.canCreate&&!H.courses.length&&!H.access?`<details class="section"><summary style="cursor:pointer;font-weight:600">¿Eres profesor/a?</summary><div style="margin-top:10px">${teacherRequest()}</div></details>`:`<section class="section"><h2>${H.courses.length||H.canCreate?"Cursos que dicto":"Cuenta de profesor"}</h2>
     ${H.courses.length?`<div class="cards">${H.courses.map(c=>`<a class="card" href="#/curso/${esc(c.id)}"><span class="label">Curso</span><h3>${esc(c.name)}</h3><span class="muted" style="font-size:14px">${(c.teams&&c.teams[0]?c.teams[0].count:0)} equipos</span></a>`).join("")}</div>`
-    :`<p class="muted" style="margin:0 0 10px">Si eres profesor/a, crea un curso y luego sus equipos. Cada equipo recibe un código para estudiantes y otro para mentores.</p>`}
-    <form class="inline" data-form="newcourse" style="margin-top:14px"><input id="course-name" data-keep placeholder="Nombre del curso, ej.: Emprendimiento · Sección 2" maxlength="100"><button class="btn" type="submit">Crear curso</button></form>
+    :H.canCreate?`<p class="muted" style="margin:0 0 10px">Crea un curso y comparte su código con tus estudiantes para que formen sus equipos.</p>`:""}
+    ${H.canCreate?`<form class="inline" data-form="newcourse" style="margin-top:14px"><input id="course-name" data-keep placeholder="Nombre del curso, ej.: Emprendimiento · Sección 2" maxlength="100"><button class="btn" type="submit">Crear curso</button></form>`:teacherRequest()}
+  </section>`}`;
+}
+function teacherRequest(){
+  const a=H.access;const today0=keyOf(new Date());
+  const expired=a&&a.status==="active"&&a.expires_at&&a.expires_at<today0;
+  let msg;
+  if(a&&a.status==="pending")return `<div class="note">Tu solicitud de cuenta de profesor fue enviada el ${fmtDay(a.requested_at)}. Cuando el administrador la active podrás crear cursos aquí.</div>`;
+  if(expired)msg=`Tu acceso de profesor venció el ${fmtDay(a.expires_at)}. Solicita la renovación al administrador.`;
+  else if(a&&a.status==="revoked")msg="Tu acceso de profesor está desactivado. Puedes solicitarlo nuevamente.";
+  else msg="Para crear cursos necesitas una cuenta de profesor activada por el administrador de la plataforma.";
+  return `<form class="panel compose" data-form="reqteacher" style="max-width:620px"><p style="margin:0">${msg}</p><label class="label" for="req-note">Cuéntanos tu institución y el curso que dictarás</label><textarea id="req-note" data-keep maxlength="1000" placeholder="Ej.: Universidad…, curso Emprendimiento e Innovación, 2 secciones, 60 estudiantes."></textarea><div><button class="btn primary" type="submit">${expired||(a&&a.status==="revoked")?"Solicitar renovación":"Solicitar cuenta de profesor"}</button></div></form>`;
+}
+
+/* ================= administración ================= */
+async function openAdmin(){
+  if(!A.isAdmin){view="notfound";render();return}
+  view="admin";ADM.loaded=false;render();
+  const [ta,cs]=await Promise.all([
+    sb.from("teacher_access").select("*,profile:profiles(full_name,email)").order("requested_at",{ascending:false}),
+    fetchAll(()=>sb.from("courses").select("owner_id").order("id"))]);
+  if(ta.error){toast(errText(ta.error));view="notfound";render();return}
+  ADM.rows=ta.data||[];ADM.courseCount={};(cs.data||[]).forEach(c=>ADM.courseCount[c.owner_id]=(ADM.courseCount[c.owner_id]||0)+1);
+  ADM.loaded=true;render();
+}
+function semesterEnd(){const d=new Date(),y=d.getFullYear();return d.getMonth()<7?`${y}-07-31`:`${y}-12-31`}
+function vAdmin(){
+  if(!ADM.loaded)return `<div class="empty"><h3>Cargando…</h3></div>`;
+  const t0=keyOf(new Date());
+  const st=r=>r.status==="pending"?["Pendiente","st-pending"]:r.status==="revoked"?["Desactivado","st-invalid"]:r.expires_at&&r.expires_at<t0?["Vencido","st-invalid"]:["Activo","st-valid"];
+  const pend=ADM.rows.filter(r=>r.status==="pending"),rest=ADM.rows.filter(r=>r.status!=="pending");
+  const who=r=>`<b>${esc((r.profile&&r.profile.full_name)||"Sin nombre")}</b><div class="muted" style="font-size:13px;user-select:all">${esc((r.profile&&r.profile.email)||"")}</div>`;
+  const f=ADM.found;
+  return `<div class="viewhead"><div><h2>Administración de profesores</h2><p>Solo las cuentas de profesor activas pueden crear cursos. Puedes poner fecha de vencimiento (por ejemplo, el fin del semestre pagado) y una nota para tu control.</p></div></div>
+  <section class="section"><h2>Solicitudes pendientes (${pend.length})</h2>
+  ${pend.length?`<div class="list">${pend.map(r=>`<div class="item"><div class="item-h"><div>${who(r)}</div><span class="spacer"></span><span class="muted" style="font-size:13px">Solicitó ${fmtDay(r.requested_at)}</span></div>
+    ${r.request_note?`<p class="muted">${esc(r.request_note)}</p>`:""}
+    <div class="toolbar" style="margin:10px 0 0"><label class="label" for="exp-${esc(r.user_id)}">Vence</label><input type="date" id="exp-${esc(r.user_id)}" value="${semesterEnd()}" style="border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:5px 8px"><input type="text" id="note-${esc(r.user_id)}" placeholder="Nota (ej.: pagó semestre 2026-2)" style="max-width:300px"><button class="btn sm primary" data-act="admact" data-id="${esc(r.user_id)}">Activar</button><span><button class="btn sm ghost" data-act="admrej" data-id="${esc(r.user_id)}">Rechazar</button></span></div></div>`).join("")}</div>`
+  :`<p class="muted">No hay solicitudes pendientes.</p>`}</section>
+  <section class="section"><h2>Profesores</h2>
+  ${rest.length?`<div class="tablewrap"><table><thead><tr><th>Persona</th><th>Estado</th><th>Cursos</th><th>Activado</th><th>Vence</th><th>Nota</th><th></th></tr></thead><tbody>${rest.map(r=>{const [l,c]=st(r);return `<tr><td>${who(r)}</td><td><span class="chip ${c}">${l}</span></td><td class="num">${ADM.courseCount[r.user_id]||0}</td><td>${r.granted_at?fmtDay(r.granted_at):"—"}</td>
+    <td><input type="date" id="exp-${esc(r.user_id)}" value="${esc(r.expires_at||"")}" style="border:1px solid var(--line);background:var(--bg);border-radius:6px;padding:4px 6px"></td>
+    <td><input type="text" id="note-${esc(r.user_id)}" value="${esc(r.admin_note||"")}" style="border:1px solid var(--line);background:var(--bg);border-radius:6px;padding:4px 6px;width:100%;min-width:150px"></td>
+    <td style="white-space:nowrap"><button class="btn sm" data-act="admact" data-id="${esc(r.user_id)}">${r.status==="active"?"Guardar":"Activar"}</button>${r.status==="active"&&r.user_id!==A.uid?` <span><button class="btn sm ghost" data-act="admrev" data-id="${esc(r.user_id)}">Desactivar</button></span>`:""}</td></tr>`}).join("")}</tbody></table></div>
+    <p class="muted" style="font-size:13px">Deja “Vence” en blanco para un acceso sin vencimiento. Un profesor desactivado o vencido conserva sus cursos y sus estudiantes siguen trabajando; solo no puede crear cursos nuevos.</p>`
+  :`<p class="muted">Aún no hay profesores.</p>`}</section>
+  <section class="section"><h2>Activar a alguien por correo</h2>
+  <form class="inline" data-form="admfind"><input type="email" id="adm-email" data-keep placeholder="correo@ejemplo.com" style="max-width:320px"><button class="btn" type="submit">Buscar</button></form>
+  ${f===false?`<p class="muted">No hay ninguna cuenta con ese correo. La persona debe crear su cuenta primero.</p>`:f?`<div class="item" style="margin-top:10px"><div class="item-h"><div><b>${esc(f.full_name||"Sin nombre")}</b><div class="muted" style="font-size:13px">${esc(f.email||"")}</div></div><span class="spacer"></span>
+    <input type="date" id="exp-${esc(f.id)}" value="${semesterEnd()}" style="border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:5px 8px"><input type="text" id="note-${esc(f.id)}" placeholder="Nota" style="border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:6px 8px"><button class="btn sm primary" data-act="admact" data-id="${esc(f.id)}">Activar como profesor</button></div></div>`:""}
   </section>`;
 }
 
@@ -735,10 +833,12 @@ function hypModal(id){
   let status=h.status;
   const isVL=T.team.tool==="valuelab";
   const stHtml=bk=>blockOf(bk).nostatus?`<span class="muted" style="font-size:13px">Este componente no tiene estado.</span>`:`<div class="statusbtns">${Object.entries(stOf(bk)).map(([k,n])=>`<button type="button" class="${k}" data-st="${k}" aria-pressed="${k===status}" ${ed?"":"disabled"}>${esc(n)}</button>`).join("")}</div>`;
-  const parHtml=bk=>{const pk=blockOf(bk).parent;if(!isVL||!pk)return"";const opts=hypsOf(pk).filter(x=>x.id!==id);
-    return `<label for="m-parent">Vinculado a (${BN[pk]})</label><select id="m-parent" ${ed?"":"disabled"}><option value="">Sin vincular</option>${opts.map(o=>`<option value="${esc(o.id)}" ${o.id===h.parent_id?"selected":""}>${esc(trim(o.text,90))}</option>`).join("")}</select>`};
+  const parHtml=bk=>{const pks=parentsOf(bk);if(!isVL||!pks.length)return"";
+    return `<label for="m-parent">Vinculado a</label><select id="m-parent" ${ed?"":"disabled"}><option value="">Sin vincular</option>${pks.map(pk=>{const opts=hypsOf(pk).filter(x=>x.id!==id);return opts.length?`<optgroup label="${esc(BN[pk])}">${opts.map(o=>`<option value="${esc(o.id)}" ${o.id===h.parent_id?"selected":""}>${esc(trim(hText(o),90))}</option>`).join("")}</optgroup>`:""}).join("")}</select>`};
+  const isIT=bk=>!!blockOf(bk).ifthen;
   const md=openModal(`<h2>${isVL?"Elemento del Value Lab":"Hipótesis"}</h2>
-  <div class="field"><label for="m-text">Enunciado</label><textarea id="m-text" ${ed?"":"readonly"} maxlength="400">${esc(h.text)}</textarea></div>
+  <div class="field"><label for="m-text" id="m-textlab">${isIT(h.block)?"SI":"Enunciado"}</label><textarea id="m-text" ${ed?"":"readonly"} maxlength="400">${esc(h.text)}</textarea></div>
+  <div class="field" id="m-thenwrap" ${isIT(h.block)?"":"hidden"}><label for="m-then">ENTONCES</label><textarea id="m-then" ${ed?"":"readonly"} maxlength="400">${esc(h.then_text||"")}</textarea></div>
   <div class="fgrid"><div class="field"><label for="m-block">${isVL?"Componente":"Bloque"}</label><select id="m-block" ${ed?"":"disabled"}>${toolBlocks().map(b=>`<option value="${b.k}" ${b.k===h.block?"selected":""}>${b.n}</option>`).join("")}</select></div>
   <div class="field"><label>Estado</label><div id="m-stwrap">${stHtml(h.block)}</div></div>
   <div class="field full" id="m-parwrap">${parHtml(h.block)}</div></div>
@@ -747,10 +847,10 @@ function hypModal(id){
   <p class="muted" style="margin:0;font-size:12.5px">Creada por ${esc(nameOf(h.created_by))} ${ago(h.created_at)}${h.updated_at?` · editada ${ago(h.updated_at)} por ${esc(nameOf(h.updated_by))}`:""}</p>
   <div class="acts">${ed?`<span class="left" id="m-del"><button class="btn danger sm" data-del>Eliminar</button></span>`:""}<button class="btn" data-close>Cerrar</button>${ed?`<button class="btn primary" data-save>Guardar</button>`:""}</div>`);
   const bindSt=()=>md.querySelectorAll("[data-st]").forEach(b=>b.onclick=()=>{status=b.dataset.st;md.querySelectorAll("[data-st]").forEach(x=>x.setAttribute("aria-pressed",x.dataset.st===status))});bindSt();
-  const bsel=md.querySelector("#m-block");if(bsel)bsel.onchange=()=>{md.querySelector("#m-stwrap").innerHTML=stHtml(bsel.value);md.querySelector("#m-parwrap").innerHTML=parHtml(bsel.value);bindSt()};
+  const bsel=md.querySelector("#m-block");if(bsel)bsel.onchange=()=>{md.querySelector("#m-stwrap").innerHTML=stHtml(bsel.value);md.querySelector("#m-parwrap").innerHTML=parHtml(bsel.value);md.querySelector("#m-thenwrap").hidden=!isIT(bsel.value);md.querySelector("#m-textlab").textContent=isIT(bsel.value)?"SI":"Enunciado";bindSt()};
   const sv=md.querySelector("[data-save]");if(sv)sv.onclick=async()=>{const text=md.querySelector("#m-text").value.trim();if(!text){toast("Escribe el enunciado.");return}
     const block=md.querySelector("#m-block").value;const upd={text,block,status:blockOf(block).nostatus?"pending":status,updated_at:now(),updated_by:A.uid};
-    if(isVL){const ps=md.querySelector("#m-parent");upd.parent_id=ps&&ps.value?ps.value:null}
+    if(isVL){const ps=md.querySelector("#m-parent");upd.parent_id=ps&&ps.value?ps.value:null;upd.then_text=isIT(block)?md.querySelector("#m-then").value.trim():""}
     sv.disabled=true;const ok=await run(sb.from("hypotheses").update(upd).eq("id",id),isVL?"Elemento guardado":"Hipótesis guardada");
     if(ok){closeModal();refetch("hyps")}else sv.disabled=false};
   confirmDel(md,`Se eliminará esta ${itemWord()}.`,async()=>{if(await run(sb.from("hypotheses").delete().eq("id",id),"Eliminado")){closeModal();refetch("hyps")}});
@@ -758,17 +858,38 @@ function hypModal(id){
 
 function vlItem(h,ev,byId){
   const e=ev[h.id],b=blockOf(h.block),par=h.parent_id&&byId[h.parent_id];
-  return `<button class="hyp" data-act="hyp" data-id="${esc(h.id)}"><span class="t">${esc(h.text)}</span>${par?`<span class="par">↳ ${esc(trim(par.text,60))}</span>`:""}${b.nostatus&&!e?"":`<span class="meta">${b.nostatus?"":`<span class="chip st-${h.status}">${esc(stOf(h.block)[h.status])}</span>`}${e?`<span class="ev"><span class="a">+${e.a}</span> <span class="r">−${e.r}</span></span>`:""}</span>`}</button>`;
+  const meta=b.nostatus&&!e?"":`<span class="meta">${b.nostatus?"":`<span class="chip st-${h.status}">${esc(stOf(h.block)[h.status])}</span>`}${e?`<span class="ev"><span class="a">+${e.a}</span> <span class="r">−${e.r}</span></span>`:""}</span>`;
+  const parl=par?`<span class="par">↳ ${esc(trim(hText(par),70))}</span>`:"";
+  if(b.ifthen)return `<button class="hyp ift" data-act="hyp" data-id="${esc(h.id)}"><span class="il">SI</span><span class="t">${esc(h.text)}</span><span class="il">ENTONCES</span><span class="t">${h.then_text?esc(h.then_text):`<span class="muted">(falta completar)</span>`}</span>${parl}${meta}</button>`;
+  return `<button class="hyp" data-act="hyp" data-id="${esc(h.id)}"><span class="t">${esc(h.text)}</span>${parl}${meta}</button>`;
 }
+function vlPart(k,ev,byId,fbc,opts){
+  const b=blockOf(k),hs=hypsOf(k),ed=canEdit();opts=opts||{};
+  const title=opts.kind?`<span class="vlkind">${b.short}</span>`:`<h3>${b.n}</h3>`;
+  const range=b.range?`<span class="rangehint${hs.length>=b.range[0]&&hs.length<=b.range[1]?" ok":""}">${hs.length} de ${b.range[0]} a ${b.range[1]}</span>`:`<span>${hs.length}</span>`;
+  const add=!ed?"":b.ifthen
+    ?`<form class="addf two" data-form="addhyp" data-block="${k}"><span class="il">SI</span><input id="add-${k}" data-keep placeholder="${esc(b.ph)}" aria-label="Si" maxlength="400"><span class="il">ENTONCES</span><input id="add-${k}-then" data-keep data-then placeholder="${esc(b.ph2)}" aria-label="Entonces" maxlength="400"><button class="btn sm" type="submit">Agregar</button></form>`
+    :`<form class="addf" data-form="addhyp" data-block="${k}"><input id="add-${k}" data-keep placeholder="${esc(b.ph)}" aria-label="Nuevo elemento en ${esc(b.n)}" maxlength="400"><button class="btn sm" type="submit">Agregar</button></form>`;
+  const q=b.ifthen?`<div class="ifq"><i>SI</i><span>Intenta capturar tu hipótesis central en un enunciado si-entonces de la siguiente forma: si resolvemos estos subproblemas,</span><i>ENTONCES</i><span>resolvemos este problema central, lo que nos permite introducir el siguiente valor.</span></div>`:`<p class="q">${b.q}</p>`;
+  return `<div class="vlpart" aria-label="${esc(b.n)}"><header>${title}<span class="cnt">${fbc[k]?`<span class="fbdot" title="Comentarios abiertos">● ${fbc[k]}</span> `:""}${range}</span></header>${b.note?`<span class="vlnote">${b.note}</span>`:""}${q}
+    <div class="hyps">${hs.map(h=>vlItem(h,ev,byId)).join("")||`<span class="empty-blk">Sin elementos todavía.</span>`}</div>${add}</div>`;
+}
+const DOWN=`<div class="vldown" aria-hidden="true"><svg viewBox="0 0 14 22"><path d="M7 1V16" stroke="currentColor" stroke-width="2.5"/><path d="M1.5 13.5L7 21L12.5 13.5z" fill="currentColor"/></svg></div>`;
 function vValueLab(){
   const ev=evidence(),fbc={};T.feedback.filter(f=>!f.resolved).forEach(f=>fbc[f.block]=(fbc[f.block]||0)+1);
-  const ed=canEdit(),byId=Object.fromEntries(T.hyps.map(h=>[h.id,h]));
-  const cols=[["b","1 · Creencias","Lo que vemos y otros no ven"],["p","2 · Problemas","Lo que hay que resolver para que la creencia se cumpla"],["a","3 · Acciones","Cómo avanzamos: probar, conseguir y buscar"]];
-  return `<div class="viewhead"><div><h2>Value Lab</h2><p>Construyan su teoría de valor: de una creencia contraria a un problema central, sus subproblemas y las acciones para resolverlos. Abran cada elemento para cambiar su estado o vincularlo con el anterior.</p></div></div>
-  <div class="vl">${cols.map(([c,t,d])=>`<div class="vlcol"><div class="vlhead"><h3>${t}</h3><span>${d}</span></div>${VL_BLOCKS.filter(b=>b.col===c).map(b=>{const hs=hypsOf(b.k);
-    return `<section class="blk" aria-label="${esc(b.n)}"><header><h3>${b.n}</h3><span class="cnt">${fbc[b.k]?`<span class="fbdot" title="Comentarios abiertos">● ${fbc[b.k]}</span>`:""}<span>${hs.length}</span></span></header><p class="q">${b.q}</p>
-    <div class="hyps">${hs.map(h=>vlItem(h,ev,byId)).join("")||`<span class="empty-blk">Sin elementos todavía.</span>`}</div>
-    ${ed?`<form class="addf" data-form="addhyp" data-block="${b.k}"><input id="add-${b.k}" data-keep placeholder="${esc(b.ph)}" aria-label="Nuevo elemento en ${esc(b.n)}" maxlength="400"><button class="btn sm" type="submit">Agregar</button></form>`:""}</section>`}).join("")}</div>`).join("")}</div>`;
+  const byId=Object.fromEntries(T.hyps.map(h=>[h.id,h]));
+  const P=(k,o)=>vlPart(k,ev,byId,fbc,o);
+  return `<div class="vlhdr"><span class="b">VALUE LAB</span><span class="s">|</span><span class="t">UNA TEORÍA PARA TU EMPRESA</span></div>
+  <p class="vlintro">Abran cada elemento para cambiar su estado o vincularlo con el elemento del que depende.</p>
+  <div class="vlg">
+    <div class="vlsec t">TEORÍA</div><div class="vlsec a">ACCIONES</div>
+    <section class="vlbox vlb" aria-label="Creencias"><h3>Creencias</h3>${P("vl_orth",{kind:true})}${DOWN}${P("vl_belief",{kind:true})}</section>
+    <div class="vlgut" aria-hidden="true"></div>
+    <div class="vlmob m1">${DOWN}</div>
+    <section class="vlbox vlp" aria-label="Problemas">${P("vl_problem")}${DOWN}${P("vl_sub")}${DOWN}${P("vl_ifthen")}</section>
+    <div class="vlmob m2">${DOWN}</div>
+    <div class="vla">${["vl_exp","vl_res","vl_sol"].map(k=>`<section class="vlbox" aria-label="${esc(BN[k])}"><span class="vlv" aria-hidden="true"></span>${P(k)}</section>`).join("")}</div>
+  </div>`;
 }
 
 /* --- Entrevistas --- */
@@ -781,7 +902,7 @@ function vEntrevistas(){
   ${list.length?`<div class="list">${list.map(i=>`<article class="item click" data-act="iv" data-id="${esc(i.id)}" tabindex="0">
     <div class="item-h"><strong>${esc(i.person)}</strong>${i.person_role?`<span class="muted">${esc(i.person_role)}</span>`:""}${i.segment?`<span class="tag">${esc(i.segment)}</span>`:""}<span class="spacer"></span><span class="mono muted" style="font-size:13px">${fmtDay(i.interview_date)} · ${esc(i.channel)}</span></div>
     ${i.insights?`<p><b>Aprendizaje clave:</b> ${esc(trim(i.insights,280))}</p>`:""}
-    ${Object.keys(i.evidence||{}).length?`<div class="evrow">${Object.entries(i.evidence).filter(([h])=>hm[h]).map(([h,v])=>`<span class="evchip ${v}" title="${esc(hm[h].text)}">${v==="apoya"?"Apoya":"Refuta"}: ${esc(trim(hm[h].text,48))}</span>`).join("")}</div>`:""}
+    ${Object.keys(i.evidence||{}).length?`<div class="evrow">${Object.entries(i.evidence).filter(([h])=>hm[h]).map(([h,v])=>`<span class="evchip ${v}" title="${esc(hText(hm[h]))}">${v==="apoya"?"Apoya":"Refuta"}: ${esc(trim(hText(hm[h]),48))}</span>`).join("")}</div>`:""}
     <div class="muted" style="font-size:12.5px;margin-top:8px">Registrada por ${esc(nameOf(i.created_by))}</div></article>`).join("")}</div>`
   :`<div class="empty"><h3>${T.interviews.length?"Sin resultados":"Aún no hay entrevistas"}</h3><p>${T.interviews.length?"Prueba con otra búsqueda.":"La meta semanal se ajusta en la pestaña Equipo. Cada entrevista puede vincularse a las hipótesis del canvas."}</p></div>`}`;
 }
@@ -797,7 +918,7 @@ function ivModal(id){
     <div class="field full"><label for="i-notes">Notas de la conversación</label><textarea id="i-notes" ${ro?"readonly":""}>${esc(iv?.notes)}</textarea></div>
     <div class="field full"><label for="i-ins">Aprendizaje clave</label><textarea id="i-ins" style="min-height:60px" ${ro?"readonly":""}>${esc(iv?.insights)}</textarea></div>
   </div>
-  <div class="field"><label>${T.team.tool==="valuelab"?"Elementos del Value Lab evaluados":"Hipótesis evaluadas"}</label>${statusBlocks().some(b=>hypsOf(b.k).length)?`<div class="evpick">${statusBlocks().filter(b=>hypsOf(b.k).length).map(b=>`<div class="grp">${b.n}</div>${hypsOf(b.k).map(h=>`<div class="opt"><span>${esc(h.text)}</span><select data-hid="${esc(h.id)}" aria-label="Resultado para la hipótesis" ${ro?"disabled":""}><option value="">—</option><option value="apoya" ${e[h.id]==="apoya"?"selected":""}>Apoya</option><option value="refuta" ${e[h.id]==="refuta"?"selected":""}>Refuta</option></select></div>`).join("")}`).join("")}</div>`:`<p class="muted" style="margin:0">Agreguen elementos en ${T.team.tool==="valuelab"?"el Value Lab":"el Canvas"} para poder vincularlos.</p>`}</div>
+  <div class="field"><label>${T.team.tool==="valuelab"?"Elementos del Value Lab evaluados":"Hipótesis evaluadas"}</label>${statusBlocks().some(b=>hypsOf(b.k).length)?`<div class="evpick">${statusBlocks().filter(b=>hypsOf(b.k).length).map(b=>`<div class="grp">${b.n}</div>${hypsOf(b.k).map(h=>`<div class="opt"><span>${esc(hText(h))}</span><select data-hid="${esc(h.id)}" aria-label="Resultado para la hipótesis" ${ro?"disabled":""}><option value="">—</option><option value="apoya" ${e[h.id]==="apoya"?"selected":""}>Apoya</option><option value="refuta" ${e[h.id]==="refuta"?"selected":""}>Refuta</option></select></div>`).join("")}`).join("")}</div>`:`<p class="muted" style="margin:0">Agreguen elementos en ${T.team.tool==="valuelab"?"el Value Lab":"el Canvas"} para poder vincularlos.</p>`}</div>
   ${iv?`<p class="muted" style="margin:0;font-size:12.5px">Registrada por ${esc(nameOf(iv.created_by))} ${ago(iv.created_at)}</p>`:""}
   <div class="acts">${iv&&!ro?`<span class="left" id="m-del"><button class="btn danger sm" data-del>Eliminar</button></span>`:""}<button class="btn" data-close>${ro?"Cerrar":"Cancelar"}</button>${ro?"":`<button class="btn primary" data-save>Guardar</button>`}</div>`);
   const sv=md.querySelector("[data-save]");if(sv)sv.onclick=async()=>{
@@ -908,7 +1029,7 @@ function computeClosure(cur,prev){
   const blocks={};ALLB.forEach(b=>{blocks[b.k]={};SKEYS.forEach(k=>blocks[b.k][k]=0)});
   for(const c of cur){const s=blocks[c.block];if(!s)continue;const p=P[c.id];
     s.total++;s[c.status]++;
-    if(!p)s.added++;else{if(p.block!==c.block)s.moved_in++;if(p.text!==c.text)s.edited++;if(p.status!==c.status){s.status_changed++;if(c.status==="pending")s.reopened++}}
+    if(!p)s.added++;else{if(p.block!==c.block)s.moved_in++;if(p.text!==c.text||(p.then_text||"")!==(c.then_text||""))s.edited++;if(p.status!==c.status){s.status_changed++;if(c.status==="pending")s.reopened++}}
     if(c.status==="valid"&&(!p||p.status!=="valid"))s.validated++;
     if(c.status==="invalid"&&(!p||p.status!=="invalid"))s.invalidated++;}
   for(const p of prev||[])if(!C[p.id]&&blocks[p.block])blocks[p.block].removed++;
@@ -944,7 +1065,7 @@ function vCierres(){
   const wk=thisWeek();
   const cur=T.closures.find(c=>c.week===wk);
   const prev=T.closures.find(c=>c.week<wk);
-  const pv=computeClosure(T.hyps.map(h=>({id:h.id,block:h.block,text:h.text,status:h.status})),prev?prev.items:[]);
+  const pv=computeClosure(T.hyps.map(h=>({id:h.id,block:h.block,text:h.text,then_text:h.then_text||"",status:h.status})),prev?prev.items:[]);
   const past=T.closures;const sel=past.find(c=>c.id===T.closureSel)||past[0];
   const asc=past.slice().reverse();
   return head+`<div class="panel" style="margin-bottom:16px">
@@ -1064,7 +1185,7 @@ function exportTeam(){
   const data={equipo:{nombre:t.name,descripcion:t.description,metaSemanal:t.goal,curso:T.course?.name},exportado:now(),
     integrantes:T.members.map(m=>({nombre:realName(m.user_id),rol:m.role})),
     herramienta:TOOLS[T.team.tool]||"Sin asignar",
-    canvas:toolBlocks().map(b=>({bloque:b.n,elementos:hypsOf(b.k).map(h=>({texto:h.text,estado:b.nostatus?null:stOf(b.k)[h.status],vinculadoA:h.parent_id?((T.hyps.find(x=>x.id===h.parent_id)||{}).text||null):null}))})),
+    canvas:toolBlocks().map(b=>({bloque:b.n,elementos:hypsOf(b.k).map(h=>({texto:h.text,...(b.ifthen?{entonces:h.then_text||""}:{}),estado:b.nostatus?null:stOf(b.k)[h.status],vinculadoA:h.parent_id?((T.hyps.find(x=>x.id===h.parent_id)||{}).text||null):null}))})),
     entrevistas:T.interviews.map(i=>({persona:i.person,cargo:i.person_role,segmento:i.segment,fecha:i.interview_date,modalidad:i.channel,notas:i.notes,aprendizaje:i.insights,
       evidencia:Object.entries(i.evidence||{}).map(([h,v])=>({hipotesis:(T.hyps.find(x=>x.id===h)||{}).text||"(eliminada)",resultado:v}))})),
     bitacora:T.logs.map(l=>({semana:l.week,titulo:l.title,aprendimos:l.learned,cambiamos:l.changed,proximosPasos:l.next_steps,pivote:l.pivot})),
@@ -1115,6 +1236,12 @@ document.addEventListener("click",async e=>{
     case "saveconsent":{const txt=($("#consent-text")||{}).value||"";t.disabled=true;if(await run(sb.from("courses").update({consent_text:txt}).eq("id",C.course.id),"Texto guardado"))C.course.consent_text=txt;t.disabled=false;break}
     case "researchjson":exportResearch(t);break;
     case "consent":consentModal();break;
+    case "admact":{const exp=($("#exp-"+id)||{}).value||null,note=($("#note-"+id)||{}).value;t.disabled=true;
+      if(await run(sb.rpc("admin_set_teacher",{uid:id,p_status:"active",p_expires:exp,p_note:note==null?null:note}),exp?`Activado hasta el ${fmtDay(exp)}`:"Activado sin vencimiento")){ADM.found=null;openAdmin()}else t.disabled=false;break}
+    case "admrej":inlineConfirm(t,"¿Rechazar la solicitud?","admrej2",id);break;
+    case "admrej2":t.disabled=true;if(await run(sb.rpc("admin_set_teacher",{uid:id,p_status:"revoked",p_expires:null,p_note:"Solicitud rechazada"}),"Solicitud rechazada"))openAdmin();break;
+    case "admrev":inlineConfirm(t,"¿Desactivar? Conserva sus cursos, pero no podrá crear nuevos.","admrev2",id);break;
+    case "admrev2":t.disabled=true;if(await run(sb.rpc("admin_set_teacher",{uid:id,p_status:"revoked",p_expires:null,p_note:null}),"Profesor desactivado"))openAdmin();break;
     case "closuresel":T.closureSel=id;render();break;
     case "closuredel":inlineConfirm(t,"¿Eliminar este cierre? No se puede deshacer.","closuredel2",id);break;
     case "closuredel2":t.disabled=true;if(await run(sb.from("weekly_closures").delete().eq("id",id),"Cierre eliminado")){T.closureSel=null;refetch("closures")}break;
@@ -1188,18 +1315,22 @@ document.addEventListener("submit",async e=>{
   else if(kind==="closeweek"){busy(true);const note=val("#cw-note");
     const ok=await run(sb.rpc("close_week",{tid:T.id,p_note:note}),"Semana cerrada");busy(false);
     if(ok){const el=document.getElementById("cw-note");if(el)el.value="";T.closureSel=null;await refetch("closures",true);const el2=document.getElementById("cw-note");if(el2)el2.value="";render()}}
+  else if(kind==="reqteacher"){busy(true);const r=await run(sb.rpc("request_teacher_access",{p_note:val("#req-note")}),"Solicitud enviada");busy(false);if(r)openHome()}
+  else if(kind==="admfind"){const em=val("#adm-email").toLowerCase();if(!em)return;busy(true);const {data}=await sb.from("profiles").select("id,full_name,email").ilike("email",em).limit(1);busy(false);ADM.found=(data&&data[0])||false;render()}
   else if(kind==="newcourse"){const name=val("#course-name");if(!name){toast("Escribe el nombre del curso.");return}busy(true);
     const d=await run(sb.from("courses").insert({name,owner_id:A.uid}).select("id").single(),"Curso creado");busy(false);
     if(d){const el=document.getElementById("course-name");if(el)el.value="";go("#/curso/"+d.id)}}
   else if(kind==="newteam"){const name=val("#team-name");if(!name){toast("Escribe el nombre del equipo.");return}busy(true);
     const d=await run(sb.from("teams").insert({name,course_id:C.course.id}).select("id").single(),"Equipo creado");busy(false);
     if(d){const el=document.getElementById("team-name");if(el)el.value="";loadCourseData()}}
-  else if(kind==="addhyp"){const inp=f.querySelector("input");const text=inp.value.trim();if(!text)return;busy(true);
-    if(await run(sb.from("hypotheses").insert({team_id:T.id,block:f.dataset.block,text}))){const el=document.getElementById(inp.id);if(el){el.value="";el.focus()}await refetch("hyps");const el2=document.getElementById(inp.id);if(el2){el2.value="";el2.focus()}}busy(false)}
+  else if(kind==="addhyp"){const inp=f.querySelector("input");const text=inp.value.trim();const th=f.querySelector("[data-then]");
+    if(!text){if(th&&th.value.trim())toast("Completa también la parte SI.");return}busy(true);
+    const row={team_id:T.id,block:f.dataset.block,text};if(th)row.then_text=th.value.trim();
+    if(await run(sb.from("hypotheses").insert(row))){const clr=()=>{[inp.id,th&&th.id].filter(Boolean).forEach(i=>{const el=document.getElementById(i);if(el)el.value=""});const el=document.getElementById(inp.id);if(el)el.focus()};clr();await refetch("hyps");clr()}busy(false)}
   else if(kind==="addfb"){const text=val("#fb-text");if(!text){toast("Escribe el comentario.");return}busy(true);
     if(await run(sb.from("feedback").insert({team_id:T.id,block:val("#fb-block"),text,created_by:A.uid}),"Comentario publicado")){const el=document.getElementById("fb-text");if(el)el.value="";await refetch("feedback");const el2=document.getElementById("fb-text");if(el2)el2.value=""}busy(false)}
   else if(kind==="addsnap"){const label=val("#snap-label")||("Versión del "+fmtDay(today()));busy(true);
-    const items=T.hyps.map(h=>({id:h.id,block:h.block,text:h.text,status:h.status}));
+    const items=T.hyps.map(h=>({id:h.id,block:h.block,text:hText(h),status:h.status}));
     const d=await run(sb.from("snapshots").insert({team_id:T.id,label,items}).select("id").single(),"Versión guardada");busy(false);
     if(d){T.snapSel=d.id;const el=document.getElementById("snap-label");if(el)el.value="";await refetch("snaps");const el2=document.getElementById("snap-label");if(el2)el2.value=""}}
   else if(kind==="teaminfo"){busy(true);const goal=parseInt(val("#ti-goal"))||10;

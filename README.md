@@ -4,7 +4,7 @@ Plataforma web para seguir ideas de negocio en clases de emprendimiento, inspira
 
 ## Qué hace
 
-- **Cuentas con correo y contraseña** para cada estudiante, mentor y profesor/a.
+- **Cuentas con correo y contraseña** para cada estudiante, mentor y profesor/a. Solo las cuentas de profesor activadas por el administrador pueden crear cursos (con vencimiento opcional).
 - **Cursos y equipos**: el profesor/a crea el curso y comparte su código. Cada estudiante elige su equipo o crea uno nuevo (un equipo por curso). Cada equipo tiene además un código para mentores.
 - **Cierres semanales** del canvas: cuántos elementos tiene cada componente y cuántos se agregaron, eliminaron, validaron, invalidaron o editaron en la semana. Pueden ser manuales o automáticos (domingo 23:59).
 - **Dos herramientas para representar la idea**: Business Model Canvas o Value Lab (Felin, Gambardella y Zenger, 2021: creencias, problemas y acciones). El profesor/a asigna cada equipo a una, a mano o al azar de forma balanceada, con historial de asignación para RCT.
@@ -31,6 +31,7 @@ Estas reglas se aplican en la base de datos, así que un equipo no puede ver el 
 - `config.js`: **el único archivo que hay que editar**, con la URL y la publishable key de Supabase.
 - `supabase/schema.sql`: crea o actualiza las tablas y reglas de acceso. Se pega en el SQL Editor de Supabase; se puede ejecutar de nuevo sin perder datos.
 - `supabase/cierre-automatico.sql` (opcional): programa el cierre automático de todos los equipos cada domingo.
+- `supabase/hacerme-admin.sql`: convierte tu cuenta en administrador de la plataforma (se ejecuta una vez, con tu correo).
 
 ## Puesta en marcha (resumen)
 
