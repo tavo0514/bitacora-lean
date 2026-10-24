@@ -48,7 +48,16 @@ button{cursor:pointer}
 .crumbs a:hover{color:var(--fg)}
 .crumbs .sep{color:var(--line)}
 .crumbs b{overflow-wrap:anywhere}
-.me{display:flex;align-items:center;gap:8px;font-size:14px}
+.me{display:flex;align-items:center;gap:8px;font-size:14px;flex-wrap:wrap}
+.mainnav{display:flex;gap:2px;flex-wrap:wrap}
+.mainnav a{padding:6px 10px;border-radius:8px;color:var(--muted);text-decoration:none;font-weight:500}
+.mainnav a:hover{color:var(--fg);background:var(--sunk)}
+.mainnav a.on{color:var(--accent);background:var(--accent-soft)}
+a.melink{display:inline-flex;align-items:center;gap:8px;color:var(--fg);text-decoration:none}
+.invite{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;background:var(--accent-soft);border-radius:12px;padding:14px 16px;margin-bottom:18px}
+.invite div{display:grid;gap:2px;flex:1;min-width:220px}
+.invite .code.big{background:var(--surface)}
+@media (max-width:620px){.mainnav a{padding:5px 8px}}
 .av{width:28px;height:28px;border-radius:50%;display:inline-grid;place-items:center;color:#fff;font-size:11.5px;font-weight:600;flex:none;letter-spacing:.02em}
 .people{display:flex}
 .people .av{border:2px solid var(--bg);margin-left:-7px}
@@ -449,13 +458,14 @@ function doRender(){
   const st=keepState();
   renderTop();
   const m=$("#main");
-  const fn={admin:vAdmin,joincourse:vJoinCourse,setup:vSetup,auth:vAuth,recovery:vRecovery,home:vHome,course:vCourse,team:vTeam,loading:()=>`<div class="empty"><h3>Cargando…</h3></div>`,notfound:vNotFound}[view];
+  const fn={account:vAccount,admin:vAdmin,joincourse:vJoinCourse,setup:vSetup,auth:vAuth,recovery:vRecovery,home:vHome,course:vCourse,team:vTeam,loading:()=>`<div class="empty"><h3>Cargando…</h3></div>`,notfound:vNotFound}[view];
   m.innerHTML=fn();
   restoreState(st);
 }
 function renderTop(){
   const logged=!!A.uid&&!["auth","setup","recovery"].includes(view);
-  $("#me").innerHTML=logged?`${A.isAdmin?`<a class="btn sm ghost" href="#/admin">Administración</a>`:""}${av(A.uid)}<span class="nm">${esc(A.name||"")}</span><button class="btn sm ghost" data-act="logout">Salir</button>`:"";
+  const on=v=>view===v?"on":"";
+  $("#me").innerHTML=logged?`<nav class="mainnav" aria-label="Navegación"><a href="#/" class="${on("home")}">Inicio</a>${A.isAdmin?`<a href="#/admin" class="${on("admin")}">Administración</a>`:""}<a href="#/cuenta" class="${on("account")}">Mi cuenta</a></nav><a class="melink" href="#/cuenta" title="Mi cuenta">${av(A.uid)}<span class="nm">${esc(A.name||"")}</span></a><button class="btn sm ghost" data-act="logout">Salir</button>`:"";
   let cr="";
   if(view==="course"&&C.course)cr=`<span class="sep">/</span><b>${esc(C.course.name)}</b>`;
   if(view==="team"&&T.team)cr=(T.isTeacher?`<span class="sep">/</span><a href="#/curso/${esc(T.course.id)}">${esc(T.course.name)}</a>`:(T.course?`<span class="sep">/</span><span class="muted">${esc(T.course.name)}</span>`:""))+`<span class="sep">/</span><b>${esc(T.team.name)}</b>`;
@@ -481,6 +491,7 @@ async function route(){
     T.tab=tab;await openTeam(p[1]);return}
   leaveTeam();
   if(p[0]==="admin"){await openAdmin();return}
+  if(p[0]==="cuenta"){view="account";render();return}
   if(p[0]==="unirse"&&J.preview){view="joincourse";render();return}
   if(p[0]==="curso"&&p[1]){await openCourse(p[1]);return}
   await openHome();
@@ -533,6 +544,7 @@ function vAuth(){
     <div class="field"><label for="su-name">Nombre y apellido</label><input id="su-name" data-keep autocomplete="name" required maxlength="80"></div>
     <div class="field"><label for="su-email">Correo</label><input id="su-email" data-keep type="email" autocomplete="email" required></div>
     <div class="field"><label for="su-pass">Contraseña (mínimo 6 caracteres)</label><input id="su-pass" type="password" autocomplete="new-password" minlength="6" required></div>
+    <div class="field"><label for="su-code">Código del curso o de tu equipo (opcional)</label><input id="su-code" data-keep maxlength="12" autocomplete="off" placeholder="Ej.: 7F3A9C" style="text-transform:uppercase"></div>
     <button class="btn primary" type="submit">Crear cuenta</button>
     <div class="authlinks"><button type="button" class="linkbtn" data-act="authmode" data-mode="login">Ya tengo cuenta</button></div></form></div>`;
   if(m==="forgot")return `<div class="authwrap"><form class="authcard" data-form="forgot"><h1>Recuperar contraseña</h1><p class="lead">Te enviaremos un enlace a tu correo para crear una contraseña nueva.</p>${msgHtml}
@@ -553,6 +565,32 @@ function vRecovery(){
 }
 function vNotFound(){return `<div class="empty"><h3>No encontramos esta página</h3><p>Puede que no tengas acceso o que se haya eliminado.</p><p><a class="btn" href="#/">Volver al inicio</a></p></div>`}
 
+/* ================= códigos ================= */
+async function useCode(code){
+  const pv=await sb.rpc("course_preview",{code}).then(r=>r,err=>({error:err}));
+  const el=document.getElementById("join-code");
+  if(!pv.error&&pv.data){if(el)el.value="";
+    if(pv.data.is_owner){go("#/curso/"+pv.data.id);return}
+    J.code=code.trim().toUpperCase();J.preview=pv.data;go("#/unirse");return}
+  const tid=await run(sb.rpc("join_team",{code}),"Te uniste al equipo");
+  if(tid){if(el)el.value="";go("#/equipo/"+tid)}
+}
+/* ================= mi cuenta ================= */
+function vAccount(){
+  const email=(A.session&&A.session.user&&A.session.user.email)||"";
+  return `<div class="viewhead"><div><h2>Mi cuenta</h2><p>Revisa tus datos y corrígelos si es necesario.</p></div></div>
+  <div class="grid2">
+    <form class="panel" data-form="accname" style="display:grid;gap:12px"><h3>Datos personales</h3>
+      <div class="field"><label for="acc-name">Nombre y apellido</label><input id="acc-name" data-keep value="${esc(A.name||"")}" maxlength="80" required></div>
+      <div class="field"><label for="acc-email">Correo (con este ingresas)</label><input id="acc-email" type="email" data-keep value="${esc(email)}" required></div>
+      <div><button class="btn primary" type="submit">Guardar datos</button></div></form>
+    <form class="panel" data-form="accpass" style="display:grid;gap:12px"><h3>Cambiar contraseña</h3>
+      <div class="field"><label for="acc-pass">Nueva contraseña (mínimo 6 caracteres)</label><input id="acc-pass" type="password" autocomplete="new-password" minlength="6" required></div>
+      <div class="field"><label for="acc-pass2">Repite la nueva contraseña</label><input id="acc-pass2" type="password" autocomplete="new-password" minlength="6" required></div>
+      <div><button class="btn primary" type="submit">Cambiar contraseña</button></div></form>
+  </div>
+  ${A.isAdmin?`<p class="muted" style="margin-top:14px">Eres administrador de la plataforma. Gestiona las cuentas de profesor en <a href="#/admin">Administración</a>.</p>`:""}`;
+}
 /* ================= inicio ================= */
 async function openHome(){
   view="home";render();
@@ -568,23 +606,28 @@ async function openHome(){
   H.teams=(mt.data||[]).filter(x=>x.team);H.courses=cs.data||[];H.loaded=true;
   if(!A.autoOpened&&H.teams.length===1&&!H.courses.length&&!location.hash.replace(/^#\/?/,"")){A.autoOpened=true;go("#/equipo/"+H.teams[0].team.id);return}
   A.autoOpened=true;render();
+  if(A.pendingCode){const c=A.pendingCode;A.pendingCode=null;await useCode(c)}
 }
 function vHome(){
   if(!H.loaded)return`<div class="empty"><h3>Cargando…</h3></div>`;
   const first=(A.name||"").split(" ")[0];
-  return `<div class="viewhead"><div><h2>Hola${first?", "+esc(first):""}</h2><p>Entra a tu equipo, únete a uno nuevo con un código, o administra tus cursos si eres profesor/a.</p></div></div>
-  <section class="section"><h2>Mis equipos</h2>
+  const teacherFirst=!!(H.courses.length||H.canCreate);
+  const TEAMS=`  <section class="section"><h2>Mis equipos</h2>
     ${H.teams.length?`<div class="cards">${H.teams.map(m=>`<a class="card" href="#/equipo/${esc(m.team.id)}"><span class="label">${esc(m.team.course?.name||"")}</span><h3>${esc(m.team.name)}</h3>${m.team.description?`<span class="muted" style="font-size:14px">${esc(trim(m.team.description,110))}</span>`:""}<span><span class="tag${m.role==="mentor"?" mentor":""}">${m.role==="mentor"?"Mentor":"Estudiante"}</span></span></a>`).join("")}</div>`
     :`<div class="note">Todavía no perteneces a ningún equipo. Pide a tu profesor/a el <b>código del curso</b> y escríbelo aquí abajo: luego podrás unirte al equipo de tus compañeros o crear uno nuevo.</div>`}
     <form class="inline" data-form="join" style="margin-top:14px"><label class="label" for="join-code">Unirme con un código</label><input id="join-code" data-keep placeholder="Ej.: 7F3A9C" maxlength="12" autocomplete="off" style="text-transform:uppercase;max-width:200px"><button class="btn primary" type="submit">Continuar</button></form>
     <p class="muted" style="font-size:13px;margin:6px 0 0">Sirve el código del curso, el de un equipo o el de mentor.</p>
   </section>
+`;
+  return `<div class="viewhead"><div><h2>Hola${first?", "+esc(first):""}</h2><p>Entra a tu equipo, únete a uno nuevo con un código, o administra tus cursos si eres profesor/a.</p></div></div>
+${teacherFirst?"":TEAMS}
   ${H.isAdmin?`<div class="banner"><span><b>Administración:</b> ${H.pending?`${H.pending} solicitud${H.pending>1?"es":""} de profesor pendiente${H.pending>1?"s":""}.`:"activa o desactiva cuentas de profesor."}</span><span class="spacer"></span><a class="btn sm primary" href="#/admin">Abrir administración</a></div>`:""}
   ${!H.canCreate&&!H.courses.length&&!H.access?`<details class="section"><summary style="cursor:pointer;font-weight:600">¿Eres profesor/a?</summary><div style="margin-top:10px">${teacherRequest()}</div></details>`:`<section class="section"><h2>${H.courses.length||H.canCreate?"Cursos que dicto":"Cuenta de profesor"}</h2>
-    ${H.courses.length?`<div class="cards">${H.courses.map(c=>`<a class="card" href="#/curso/${esc(c.id)}"><span class="label">Curso</span><h3>${esc(c.name)}</h3><span class="muted" style="font-size:14px">${(c.teams&&c.teams[0]?c.teams[0].count:0)} equipos</span></a>`).join("")}</div>`
+    ${H.courses.length?`<div class="cards">${H.courses.map(c=>`<a class="card" href="#/curso/${esc(c.id)}"><span class="label">Curso</span><h3>${esc(c.name)}</h3><span class="muted" style="font-size:14px">${(c.teams&&c.teams[0]?c.teams[0].count:0)} equipos</span><span style="margin-top:4px"><span class="btn sm">Ver equipos →</span></span></a>`).join("")}</div>`
     :H.canCreate?`<p class="muted" style="margin:0 0 10px">Crea un curso y comparte su código con tus estudiantes para que formen sus equipos.</p>`:""}
     ${H.canCreate?`<form class="inline" data-form="newcourse" style="margin-top:14px"><input id="course-name" data-keep placeholder="Nombre del curso, ej.: Emprendimiento · Sección 2" maxlength="100"><button class="btn" type="submit">Crear curso</button></form>`:teacherRequest()}
-  </section>`}`;
+  </section>`}
+  ${teacherFirst?TEAMS:""}`;
 }
 function teacherRequest(){
   const a=H.access;const today0=keyOf(new Date());
@@ -701,7 +744,7 @@ function vCourse(){
     <td class="num">${s.fb}</td>
     <td>${flags.length?`<span class="chip st-pending" title="${esc(flags.join(" · "))}">${esc(flags[0])}${flags.length>1?" +"+(flags.length-1):""}</span>`:`<span class="chip st-valid">Al día</span>`}</td>
     <td>${s.lastClose?`${fmtDay(s.lastClose.week)}<div class="muted" style="font-size:12.5px">${(s.lastClose.stats.totals||{}).changes||0} cambios${s.lastClose.auto?" · automático":""}</div>`:"—"}</td>
-    <td><span class="code" title="Código para mentores">${esc(t.mentor_code)}</span></td></tr>`}).join("");
+    <td><span class="code" title="Código para mentores">${esc(t.mentor_code)}</span></td><td><span class="btn sm primary">Abrir →</span></td></tr>`}).join("");
   return `<div class="viewhead"><div><h2>${esc(C.course.name)}</h2><p>Panel del curso. Haz clic en un equipo para ver su trabajo y dejar comentarios.</p></div><span class="spacer"></span>
     ${C.teams.length?`<button class="btn" data-act="exportcourse">Descargar resumen (CSV)</button>`:""}${C.closures.length?`<button class="btn" data-act="exportclosures">Descargar cierres (CSV)</button>`:""}<button class="btn" data-act="renamecourse">Renombrar</button></div>
   ${C.course.join_code!==undefined?`<div class="coursebar"><span class="label">Código del curso</span><span class="code big">${esc(C.course.join_code)}</span><button class="btn sm" data-act="copycode" data-code="${esc(C.course.join_code)}">Copiar</button><span><button class="btn sm ghost" data-act="regencourse">Generar código nuevo</button></span><span class="spacer"></span><label class="check"><input type="checkbox" id="allowcreate" ${C.course.allow_team_creation?"checked":""}> Los estudiantes pueden crear sus propios equipos</label></div>`
@@ -709,7 +752,7 @@ function vCourse(){
   ${researchPanel()}
   ${C.teams.length&&!C.closuresErr?`<div class="toolbar"><span class="muted" style="font-size:14px">Semana del ${fmtDay(wk)}: ${C.teams.filter(t=>C.stats[t.id].lastClose&&C.stats[t.id].lastClose.week===wk).length} de ${C.teams.length} equipos cerrados.</span><span><button class="btn sm" data-act="closeall">Cerrar la semana de todos los equipos</button></span></div>`:""}
   <form class="toolbar" data-form="newteam"><input type="text" id="team-name" data-keep placeholder="Nombre del nuevo equipo" maxlength="80" aria-label="Nombre del nuevo equipo"><button class="btn primary" type="submit">Crear equipo</button></form>
-  ${C.teams.length?`<div class="tablewrap"><table><thead><tr><th>Equipo</th>${"rct_mode" in C.course?"<th>Herramienta</th>":""}<th>Integrantes</th><th>Entrevistas<br>semana / total</th><th>Hipótesis<br>✓ · ✗ · total</th><th>Última bitácora</th><th>Comentarios<br>abiertos</th><th>Estado</th><th>Último<br>cierre</th><th>Código<br>mentores</th></tr></thead><tbody>${rows}</tbody></table></div>
+  ${C.teams.length?`<h3 style="font-size:18px;margin:0 0 10px">Equipos del curso (${C.teams.length})</h3><div class="tablewrap"><table><thead><tr><th>Equipo</th>${"rct_mode" in C.course?"<th>Herramienta</th>":""}<th>Integrantes</th><th>Entrevistas<br>semana / total</th><th>Hipótesis<br>✓ · ✗ · total</th><th>Última bitácora</th><th>Comentarios<br>abiertos</th><th>Estado</th><th>Último<br>cierre</th><th>Código<br>mentores</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>
   <div class="note" style="margin-top:16px"><b>Cómo invitar:</b><ol><li>Comparte el <b>código del curso</b> con tus estudiantes.</li><li>Cada estudiante crea su cuenta en esta página, escribe el código y elige su equipo o crea uno nuevo (si lo permites arriba). Solo pueden estar en un equipo por curso.</li><li>Los mentores usan el <b>código de mentores</b> de cada equipo: pueden leer todo y comentar, pero no editar el canvas. Los estudiantes también ven ese código para invitar a su mentor.</li></ol></div>`
   :`<div class="empty"><h3>Este curso aún no tiene equipos</h3><p>Comparte el código del curso para que los estudiantes creen o elijan su equipo, o crea uno tú escribiendo su nombre arriba.</p></div>`}
   <div style="margin-top:28px;display:flex;justify-content:flex-end" id="delcourse"><button class="btn sm ghost" data-act="delcourse">Eliminar este curso</button></div>`;
@@ -776,7 +819,8 @@ function vResumen(){
   const byWk={};T.interviews.forEach(iv=>{const k=keyOf(mondayOf(parseDay(iv.interview_date)));byWk[k]=(byWk[k]||0)+1});
   const v=T.hyps.filter(h=>h.status==="valid").length,inv=T.hyps.filter(h=>h.status==="invalid").length,pen=T.hyps.length-v-inv;
   const openFb=T.feedback.filter(f=>!f.resolved).length,pivots=T.logs.filter(l=>l.pivot).length;
-  return `<div class="viewhead"><div><h2>${esc(t.name)}</h2>${T.team.tool?`<span class="tag" style="margin-top:6px">${TOOLS[T.team.tool]}</span>`:""}${t.description?`<p>${esc(t.description)}</p>`:canEdit()?`<p>Agrega una descripción de la idea en la pestaña <b>Equipo</b>.</p>`:""}</div></div>
+  const invite=T.role==="estudiante"?`<div class="invite"><div><b>Invita a tus compañeros de equipo</b><span class="muted" style="font-size:13.5px">Envíales este código. Al crear su cuenta lo escriben en “Unirme con un código” y quedan en este equipo.</span></div><span class="code big">${esc(t.student_code)}</span><button class="btn sm" data-act="copycode" data-code="${esc(t.student_code)}">Copiar código</button><button class="btn sm primary" data-act="copyinvite" data-code="${esc(t.student_code)}">Copiar invitación</button></div>`:"";
+  return invite+`<div class="viewhead"><div><h2>${esc(t.name)}</h2>${T.team.tool?`<span class="tag" style="margin-top:6px">${TOOLS[T.team.tool]}</span>`:""}${t.description?`<p>${esc(t.description)}</p>`:canEdit()?`<p>Agrega una descripción de la idea en la pestaña <b>Equipo</b>.</p>`:""}</div></div>
   <div class="kpis">
     <div class="kpi"><div class="label">Entrevistas</div><div class="v">${T.interviews.length}</div><div class="s"><span class="mono">${byWk[wk]||0}/${goal}</span> esta semana</div></div>
     <div class="kpi"><div class="label">Hipótesis validadas</div><div class="v" style="color:var(--ok)">${v}</div><div class="s">de ${T.hyps.length} en el canvas</div></div>
@@ -1225,6 +1269,8 @@ document.addEventListener("click",async e=>{
     case "tab":go(`#/equipo/${T.id}/${t.dataset.tab}`);window.scrollTo({top:0});break;
     case "openteam":go("#/equipo/"+id);break;
     case "jointeam":{t.disabled=true;const tid=await run(sb.rpc("join_course_team",{code:J.code,tid:id}),"Te uniste al equipo");if(tid){J.preview=null;go("#/equipo/"+tid)}else t.disabled=false;break}
+    case "copyinvite":{const code=t.dataset.code,url=location.origin+location.pathname;const msg=`¡Hola! Únete a nuestro equipo "${T.team.name}" en Bitácora Lean:\n1. Entra a ${url}\n2. Crea tu cuenta.\n3. Escribe el código ${code} en "Unirme con un código".`;
+      try{await navigator.clipboard.writeText(msg);toast("Invitación copiada: pégala en WhatsApp o correo")}catch(err){toast("Copia el código: "+code)}break}
     case "copycode":{const code=t.dataset.code;try{await navigator.clipboard.writeText(code);toast("Código copiado: "+code)}catch(err){toast("Copia este código: "+code)}break}
     case "regencourse":inlineConfirm(t,"El código actual dejará de funcionar. ¿Continuar?","regencourse2");break;
     case "regencourse2":{t.disabled=true;if(await run(sb.rpc("regenerate_course_code",{cid:C.course.id}),"Código del curso cambiado")){const {data}=await sb.from("courses").select("*").eq("id",C.course.id).maybeSingle();if(data)C.course=data;render()}break}
@@ -1297,20 +1343,26 @@ document.addEventListener("submit",async e=>{
     busy(true);const {data,error}=await sb.auth.signUp({email:val("#su-email"),password:f.querySelector("#su-pass").value,options:{data:{full_name:name},emailRedirectTo:location.origin+location.pathname}});busy(false);
     if(error){A.authMsg={text:errText(error)};render()}
     else if(!data.session){A.authMode="login";A.authMsg={ok:true,text:"¡Cuenta creada! Te enviamos un correo para confirmarla. Ábrelo, haz clic en el enlace y luego ingresa aquí."};render()}
-    else A.authMsg=null}
+    else{A.authMsg=null;A.pendingCode=val("#su-code")||null}}
   else if(kind==="forgot"){busy(true);const {error}=await sb.auth.resetPasswordForEmail(val("#fg-email"),{redirectTo:location.origin+location.pathname});busy(false);
     A.authMsg=error?{text:errText(error)}:{ok:true,text:"Si el correo está registrado, te llegará un enlace en unos minutos. Revisa también la carpeta de spam."};render()}
   else if(kind==="newpass"){busy(true);const {error}=await sb.auth.updateUser({password:f.querySelector("#np-pass").value});busy(false);
     if(error){A.authMsg={text:errText(error)};render()}else{A.recovering=false;A.authMsg=null;toast("Contraseña actualizada");history.replaceState(null,"",location.pathname+"#/");route()}}
-  else if(kind==="join"){const code=val("#join-code");if(!code)return;busy(true);
-    const pv=await sb.rpc("course_preview",{code}).then(r=>r,err=>({error:err}));
-    if(!pv.error&&pv.data){busy(false);const el=document.getElementById("join-code");if(el)el.value="";
-      if(pv.data.is_owner){go("#/curso/"+pv.data.id);return}
-      J.code=code.trim().toUpperCase();J.preview=pv.data;go("#/unirse");return}
-    const tid=await run(sb.rpc("join_team",{code}),"Te uniste al equipo");busy(false);
-    if(tid){const el=document.getElementById("join-code");if(el)el.value="";go("#/equipo/"+tid)}}
+  else if(kind==="join"){const code=val("#join-code");if(!code)return;busy(true);await useCode(code);busy(false)}
+  else if(kind==="accname"){const name=val("#acc-name"),email=val("#acc-email");if(!name){toast("Escribe tu nombre.");return}busy(true);
+    let msg="Datos guardados",emailOk=null;
+    if(email&&email!==((A.session&&A.session.user&&A.session.user.email)||"")){const {data,error}=await sb.auth.updateUser({email});
+      if(error){busy(false);toast(errText(error));return}
+      emailOk=data&&data.user&&data.user.email===email;msg=emailOk?"Datos y correo actualizados":"Te enviamos un correo para confirmar tu nueva dirección. Hasta confirmarla, sigue usando la anterior."}
+    const upd={full_name:name};if(emailOk)upd.email=email;
+    const r=await sb.from("profiles").update(upd).eq("id",A.uid);await sb.auth.updateUser({data:{full_name:name}});busy(false);
+    if(r.error){toast(errText(r.error));return}
+    A.name=name;names[A.uid]=name;const s2=await sb.auth.getSession();A.session=s2.data.session||A.session;toast(msg);render()}
+  else if(kind==="accpass"){const p1=f.querySelector("#acc-pass").value,p2=f.querySelector("#acc-pass2").value;
+    if(p1!==p2){toast("Las contraseñas no coinciden.");return}busy(true);const {error}=await sb.auth.updateUser({password:p1});busy(false);
+    if(error)toast(/different/i.test(error.message||"")?"La nueva contraseña debe ser distinta de la actual.":errText(error));else{f.reset();toast("Contraseña cambiada")}}
   else if(kind==="createteam"){const name=val("#ct-name");if(!name){toast("Escribe el nombre del equipo.");return}busy(true);
-    const tid=await run(sb.rpc("create_course_team",{code:J.code,p_name:name}),"Equipo creado. Comparte el código del curso con tus compañeros para que se unan.");busy(false);
+    const tid=await run(sb.rpc("create_course_team",{code:J.code,p_name:name}),"Equipo creado. Invita a tus compañeros con el código del equipo.");busy(false);
     if(tid){J.preview=null;go("#/equipo/"+tid)}}
   else if(kind==="closeweek"){busy(true);const note=val("#cw-note");
     const ok=await run(sb.rpc("close_week",{tid:T.id,p_note:note}),"Semana cerrada");busy(false);
