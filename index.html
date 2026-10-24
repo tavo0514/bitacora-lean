@@ -50,6 +50,7 @@ button{cursor:pointer}
 .crumbs b{overflow-wrap:anywhere}
 .me{display:flex;align-items:center;gap:8px;font-size:14px;flex-wrap:wrap}
 .mainnav{display:flex;gap:2px;flex-wrap:wrap}
+.grid2.start{align-items:start}
 .mainnav a{padding:6px 10px;border-radius:8px;color:var(--muted);text-decoration:none;font-weight:500}
 .mainnav a:hover{color:var(--fg);background:var(--sunk)}
 .mainnav a.on{color:var(--accent);background:var(--accent-soft)}
@@ -492,7 +493,8 @@ async function route(){
   leaveTeam();
   if(p[0]==="admin"){await openAdmin();return}
   if(p[0]==="cuenta"){view="account";render();return}
-  if(p[0]==="unirse"&&J.preview){view="joincourse";render();return}
+  if(p[0]==="unirse"){if(!J.preview){const c=lsGet("bl-course-code");if(c){const pv=await sb.rpc("course_preview",{code:c});if(!pv.error&&pv.data){J.code=c;J.preview=pv.data}}}
+    if(J.preview){view="joincourse";render();return}}
   if(p[0]==="curso"&&p[1]){await openCourse(p[1]);return}
   await openHome();
 }
@@ -571,7 +573,7 @@ async function useCode(code){
   const el=document.getElementById("join-code");
   if(!pv.error&&pv.data){if(el)el.value="";
     if(pv.data.is_owner){go("#/curso/"+pv.data.id);return}
-    J.code=code.trim().toUpperCase();J.preview=pv.data;go("#/unirse");return}
+    J.code=code.trim().toUpperCase();J.preview=pv.data;lsSet("bl-course-code",J.code);go("#/unirse");return}
   const tid=await run(sb.rpc("join_team",{code}),"Te uniste al equipo");
   if(tid){if(el)el.value="";go("#/equipo/"+tid)}
 }
@@ -614,9 +616,12 @@ function vHome(){
   const teacherFirst=!!(H.courses.length||H.canCreate);
   const TEAMS=`  <section class="section"><h2>Mis equipos</h2>
     ${H.teams.length?`<div class="cards">${H.teams.map(m=>`<a class="card" href="#/equipo/${esc(m.team.id)}"><span class="label">${esc(m.team.course?.name||"")}</span><h3>${esc(m.team.name)}</h3>${m.team.description?`<span class="muted" style="font-size:14px">${esc(trim(m.team.description,110))}</span>`:""}<span><span class="tag${m.role==="mentor"?" mentor":""}">${m.role==="mentor"?"Mentor":"Estudiante"}</span></span></a>`).join("")}</div>`
-    :`<div class="note">Todavía no perteneces a ningún equipo. Pide a tu profesor/a el <b>código del curso</b> y escríbelo aquí abajo: luego podrás unirte al equipo de tus compañeros o crear uno nuevo.</div>`}
-    <form class="inline" data-form="join" style="margin-top:14px"><label class="label" for="join-code">Unirme con un código</label><input id="join-code" data-keep placeholder="Ej.: 7F3A9C" maxlength="12" autocomplete="off" style="text-transform:uppercase;max-width:200px"><button class="btn primary" type="submit">Continuar</button></form>
-    <p class="muted" style="font-size:13px;margin:6px 0 0">Sirve el código del curso, el de un equipo o el de mentor.</p>
+    :`<div class="panel compose" style="max-width:640px"><span class="label">Paso 1 de 2</span><h3 style="margin:0">Entra a tu curso</h3>
+      <p class="muted" style="margin:0;font-size:14px">Escribe el <b>código del curso</b> que te dio tu profesor/a. Así quedas en tu curso y no en otro. En el paso 2 creas tu equipo o te unes al de tus compañeros.</p>
+      <form class="row" data-form="join"><input id="join-code" data-keep placeholder="Código del curso, ej.: 7F3A9C" maxlength="12" autocomplete="off" style="text-transform:uppercase;flex:1;min-width:0;max-width:260px;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:8px 10px" aria-label="Código del curso"><button class="btn primary" type="submit">Entrar al curso</button></form>
+      <p class="muted" style="margin:0;font-size:13px">¿Un compañero ya creó tu equipo y te envió su código? Escríbelo aquí mismo y entrarás directo a su equipo.</p></div>`}
+    ${H.teams.length?`<form class="inline" data-form="join" style="margin-top:14px"><label class="label" for="join-code">Unirme con un código</label><input id="join-code" data-keep placeholder="Ej.: 7F3A9C" maxlength="12" autocomplete="off" style="text-transform:uppercase;max-width:200px"><button class="btn primary" type="submit">Continuar</button></form>
+    <p class="muted" style="font-size:13px;margin:6px 0 0">Sirve el código de otro curso, de un equipo o de mentor.</p>`:""}
   </section>
 `;
   return `<div class="viewhead"><div><h2>Hola${first?", "+esc(first):""}</h2><p>Entra a tu equipo, únete a uno nuevo con un código, o administra tus cursos si eres profesor/a.</p></div></div>
@@ -688,10 +693,10 @@ function vJoinCourse(){
   if(mine)return `<div class="viewhead"><div><span class="label">Curso</span><h2>${esc(c.name)}</h2><p>${intro}</p></div></div>
     <div class="note">Tu equipo es <b>${esc(mine.name)}</b>. Si quieres cambiarte, primero sal de él desde su pestaña <b>Equipo</b>.</div>
     <p><a class="btn primary" href="#/equipo/${esc(mine.id)}">Ir a mi equipo</a></p>`;
-  return `<div class="viewhead"><div><span class="label">Curso</span><h2>${esc(c.name)}</h2><p>${intro}</p></div></div>
-  ${c.allow_team_creation?`<form class="panel compose" data-form="createteam" style="max-width:620px"><label class="label" for="ct-name">Crear un equipo nuevo</label><div class="row"><input id="ct-name" data-keep placeholder="Nombre del equipo o de la idea" maxlength="80" style="flex:1;min-width:0;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:8px 10px"><button class="btn primary" type="submit">Crear y unirme</button></div><span class="muted" style="font-size:13px">Antes de crear uno, revisa abajo si tus compañeros ya lo crearon.</span></form>`:""}
-  <section class="section"><h2>Equipos del curso</h2>${c.teams.length?`<div class="cards">${c.teams.map(t=>`<div class="card"><h3>${esc(t.name)}</h3>${t.description?`<span class="muted" style="font-size:14px">${esc(trim(t.description,110))}</span>`:""}<span style="font-size:13.5px">${t.members.length?esc(t.members.join(", ")):`<span class="muted">Sin integrantes todavía</span>`}</span><span style="margin-top:4px"><button class="btn sm" data-act="jointeam" data-id="${esc(t.id)}">Unirme a este equipo</button></span></div>`).join("")}</div>`
-  :`<div class="empty"><h3>Aún no hay equipos</h3><p>${c.allow_team_creation?"Crea el primero arriba y comparte el código del curso con tus compañeros para que se unan.":"Tu profesor/a todavía no crea los equipos. Vuelve a intentarlo más tarde."}</p></div>`}</section>`;
+  return `<div class="viewhead"><div><span class="label">Paso 2 de 2 · Curso</span><h2>${esc(c.name)}</h2><p>${intro}</p></div></div>
+  ${c.allow_team_creation?`<form class="panel compose" data-form="createteam" style="max-width:620px"><label class="label" for="ct-name">Crear mi equipo (si eres el primero de tu grupo)</label><div class="row"><input id="ct-name" data-keep placeholder="Nombre del equipo o de la idea" maxlength="80" style="flex:1;min-width:0;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:8px 10px"><button class="btn primary" type="submit">Crear y unirme</button></div><span class="muted" style="font-size:13px">Antes de crear uno, revisa abajo si tus compañeros ya lo crearon.</span></form>`:""}
+  <section class="section"><h2>${c.allow_team_creation?"O únete al equipo de tus compañeros":"Elige tu equipo"}</h2>${c.teams.length?`<div class="cards">${c.teams.map(t=>`<div class="card"><h3>${esc(t.name)}</h3>${t.description?`<span class="muted" style="font-size:14px">${esc(trim(t.description,110))}</span>`:""}<span style="font-size:13.5px">${t.members.length?esc(t.members.join(", ")):`<span class="muted">Sin integrantes todavía</span>`}</span><span style="margin-top:4px"><button class="btn sm" data-act="jointeam" data-id="${esc(t.id)}">Unirme a este equipo</button></span></div>`).join("")}</div>`
+  :`<div class="empty"><h3>Aún no hay equipos</h3><p>${c.allow_team_creation?"Crea el primero arriba. Después verás el código de tu equipo para invitar a tus compañeros.":"Tu profesor/a todavía no crea los equipos. Vuelve a intentarlo más tarde."}</p></div>`}</section>`;
 }
 
 /* ================= curso (panel del profesor/a) ================= */
@@ -1348,6 +1353,9 @@ document.addEventListener("submit",async e=>{
     A.authMsg=error?{text:errText(error)}:{ok:true,text:"Si el correo está registrado, te llegará un enlace en unos minutos. Revisa también la carpeta de spam."};render()}
   else if(kind==="newpass"){busy(true);const {error}=await sb.auth.updateUser({password:f.querySelector("#np-pass").value});busy(false);
     if(error){A.authMsg={text:errText(error)};render()}else{A.recovering=false;A.authMsg=null;toast("Contraseña actualizada");history.replaceState(null,"",location.pathname+"#/");route()}}
+  else if(kind==="quickteam"){const code=val("#qt-code"),name=val("#qt-name");if(!code){toast("Escribe el código del curso.");return}if(!name){toast("Escribe el nombre del equipo.");return}busy(true);
+    const tid=await run(sb.rpc("create_course_team",{code,p_name:name}),"Equipo creado. Invita a tus compañeros con el código del equipo.");busy(false);
+    if(tid){["qt-code","qt-name"].forEach(i=>{const el=document.getElementById(i);if(el)el.value=""});go("#/equipo/"+tid)}}
   else if(kind==="join"){const code=val("#join-code");if(!code)return;busy(true);await useCode(code);busy(false)}
   else if(kind==="accname"){const name=val("#acc-name"),email=val("#acc-email");if(!name){toast("Escribe tu nombre.");return}busy(true);
     let msg="Datos guardados",emailOk=null;
